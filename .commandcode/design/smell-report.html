@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Willow - Smell Report</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+		.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+		.report-section { border: 1px solid #222226; background: #0a0a0b; position: relative; }
+		.corner-box { position: absolute; width: 20px; height: 20px; border: 1px solid #222226; background: #000; }
+	</style>
+</head>
+<body class="bg-black text-[#fafafa]">
+	<main class="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-12">
+		<header class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// SMELL</div>
+					<h1 class="text-4xl font-bold tracking-tight md:text-6xl">Willow</h1>
+					<p class="mt-2 text-sm text-[#a0a0a0]">Voice-first journaling PWA &middot; golden-hour register &middot; apps/web</p>
+				</div>
+				<div class="mono text-left text-xs text-[#666] md:text-right">
+					<div>COMMANDCODE REPORT</div>
+					<div class="text-[#444]">2026-08-20</div>
+				</div>
+			</div>
+		</header>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// OVERALL</div>
+					<div class="text-6xl font-bold tracking-tight md:text-7xl">8<span class="text-3xl font-normal text-[#555]">/10</span></div>
+					<div class="mt-4 inline-flex border border-[#34d399]/30 bg-[#34d399]/10 px-3 py-1 text-sm text-[#34d399]">FAINT</div>
+					<p class="mono mt-3 text-xs text-[#666]">1 tell &middot; LOW only &middot; no HIGH &middot; no cluster</p>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// TL;DR</div>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Willow reads as authored, not generated. Warm OKLCH amber palette, Lora serif journal voice, flood-gradient ritual, LiveKit aura tied to real mic volume, and film-grain noise survive the 2-second sniff test. No blue-violet tech gradient, no generic tech hue, no glass, no stat monument — none of the usual AI tells.</p>
+					<p class="mt-4 text-sm leading-6 text-[#fbbf24]">ONE FAINT TELL: uniform <span class="mono text-xs">rounded-2xl border bg-surface</span> card chrome repeats across Stats (5 cards) + Today (3 prompt cards) until hierarchy flattens. Fix the card surfaces and this is Clean. No recolor needed.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// HEURISTIC SCORES</div>
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[720px] border-collapse text-sm">
+					<thead>
+						<tr class="border-b border-[#222226] text-left mono text-xs text-[#666]">
+							<th class="py-3 pr-4 font-normal">#</th>
+							<th class="py-3 pr-4 font-normal">HEURISTIC</th>
+							<th class="py-3 pr-4 font-normal">SCORE</th>
+							<th class="py-3 font-normal">KEY FINDING</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">1</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Tech gradient</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — amber flood + shimmer are<br/><span class="mono text-xs text-[#666]">oklch 65–80 / #d99a3d→#b87a2a / #ffe9c9</span> on one ritual + one CTA, not indigo gloss.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">2</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Generic tech hue</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — accent is <span class="mono text-xs text-[#666]">oklch(0.72 0.15 65)</span> amber, not blue-violet.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#fafafa] font-medium">3</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">Feature tile grid</td>
+							<td class="py-4 pr-4 text-[#f43f5e]">0</td>
+							<td class="py-4 text-[#fbbf24]">Present (faint) — 5 equal Stats cards + 3 equal Today prompt cards; same chrome, same weight.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">4</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Accent rail</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — no left-stripe decoration on cards or callouts.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">5</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Unearned blur</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — <span class="mono text-xs text-[#666]">backdrop-blur</span> only on fixed tab bars (earned depth), not on frosted cards.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">6</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Stat monument</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — streak <span class="mono text-xs text-[#666]">text-3xl</span>, bars <span class="mono text-xs text-[#666]">h-24 max 80px</span>; modest, not monumental.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">7</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Icon topper</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — Flame / TrendingUp inline with text, not rounded-square toppers.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">8</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Bounce everywhere</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — <span class="mono text-xs text-[#666]">fade-up 0.3s ease-out</span> + wave <span class="mono text-xs text-[#666]">ease-in-out</span>; respects <span class="mono text-xs text-[#666]">prefers-reduced-motion</span>.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">9</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Default type</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — Lora Variable serif (400–700) + system sans; <span class="mono text-xs text-[#666]">journal 70ch</span> measure.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">10</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Center stack</td>
+							<td class="py-4 pr-4 text-[#34d399]">1</td>
+							<td class="py-4 text-[#a0a0a0]">Absent — <span class="mono text-xs text-[#666]">max-w-lg</span> is a PWA phone frame, not a landing safe-middle; headings left-align.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="mono mt-4 text-xs text-[#555]">Scoring: 1 = odor absent, 0 = detected &middot; Heuristic total 9/10 absent &middot; Overall 8/10 FAINT (1 LOW tell)</p>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// COGNITIVE LOAD / RISK</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mb-3 text-xl font-semibold">Low</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Warm, authored surface — amber OKLCH palette, serif voice, grain, truthful aura. Nothing shouts "AI template" at 2 seconds.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>No clustered smells. 9/10 heuristics clean; single uniform-card repetition is isolated.</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">WATCH</span>Uniform card chrome flattens Stats hierarchy — the scan path has no priority.</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// NEXT MODES</div>
+					<div class="flex flex-wrap gap-2">
+						<span class="border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-3 py-1 text-sm text-[#fbbf24]">/deslop</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/relayout</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/refine</span>
+					</div>
+					<p class="mono mt-4 text-xs leading-5 text-[#555]">No /recolor needed — palette is already a decision. Target Stats + Today card surfaces only.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// WHAT'S WORKING</div>
+			<div class="grid gap-4 md:grid-cols-3">
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Golden-hour identity</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Cream <span class="mono text-xs">oklch 0.96</span> canvas + amber accents + warm film grain. A real point of view that avoids both the generic wellness palette and the AI indigo gradient.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Serif journal voice</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Lora Variable on headings + journal body (70ch measure, 1.7 leading) reads like a diary page, distinct from the system-sans chrome.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Truthful recording ritual</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Flood gradient + LiveKit aura driven by real mic volume + rotating capture phrases. The recording moment feels like a ritual, not a button.</p>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// PRIORITY ISSUES</div>
+			<div class="space-y-5">
+				<article class="border border-[#2a2a1e] bg-[#111009] p-5">
+					<div class="mono mb-2 text-xs text-[#fbbf24]">P2 / LOW &middot; Layout — feature tile grid (faint)</div>
+					<h2 class="mb-2 text-lg font-semibold">Uniform card chrome flattens the hierarchy</h2>
+					<p class="mb-3 text-sm leading-6 text-[#a0a0a0]">Every Stats block is the same tile — <span class="mono text-xs">rounded-2xl border border-line bg-surface p-5</span> — streak, 14-day chart, mood calendar, moods-lately, and digest. Today mirrors it with 3 equal <span class="mono text-xs">rounded-2xl border bg-surface p-4</span> prompt cards. Same chrome, same weight, stacked. The scan path has no priority; the weekly digest (the emotional payoff) looks like another widget.</p>
+					<p class="mono mb-3 text-xs text-[#666]">apps/web/src/features/stats/StatsScreen.tsx:68–145 &middot; apps/web/src/features/today/TodayScreen.tsx:98–104</p>
+					<div class="grid gap-3 md:grid-cols-2">
+						<div class="border-l border-[#333] pl-4">
+							<div class="mono mb-1 text-xs text-[#666]">BEFORE</div>
+							<p class="text-sm leading-6 text-[#a0a0a0]">5 equal bordered cards (Stats) + 3 equal prompt cards (Today); identical radius, border, fill, padding.</p>
+						</div>
+						<div class="border-l border-[#fbbf24] pl-4">
+							<div class="mono mb-1 text-xs text-[#fbbf24]">AFTER</div>
+							<p class="text-sm leading-6 text-[#fbbf24]">Keep streak + chart as bordered cards; render digest as a borderless <span class="mono text-xs">bg-accent-soft p-6</span> letter; tighten moods-lately into inline rows without a card shell. On Today, keep 1 hero prompt card + 2 quiet text-only prompts (or one card with stacked prompts separated by <span class="mono text-xs">border-t</span> dividers).</p>
+						</div>
+					</div>
+					<p class="mt-3 text-sm leading-6 text-[#666]">Why LOW not MEDIUM: the cards carry real, differentiated data (streak, chart, calendar, digest) — the smell is repetition of chrome, not empty marketing tiles. Faint because the underlying content is varied; only the surface treatment is uniform.</p>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// CONSIDERED BUT REJECTED</div>
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[720px] border-collapse text-sm">
+					<thead>
+						<tr class="border-b border-[#222226] text-left mono text-xs text-[#666]">
+							<th class="py-3 pr-4 font-normal">LOCATION</th>
+							<th class="py-3 pr-4 font-normal">CANDIDATE</th>
+							<th class="py-3 font-normal">REJECTED BECAUSE</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">index.css .flood<br/>ShimmerButton.tsx:50</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag tech gradient / tech hue on amber flood + shimmer</td>
+							<td class="py-4 text-[#a0a0a0]">Hues are OKLCH 65–80 warm amber, not indigo; confined to one ritual + one CTA. Project-specific, not generic gloss.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">Shell.tsx:18<br/>ReviewScreen.tsx:186</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag unearned blur on tab bars</td>
+							<td class="py-4 text-[#a0a0a0]">Blur on fixed bottom bars separates the attention plane from the content plane — earned depth per the 3-plane model. No frosted cards.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">StatsScreen.tsx:69 streak<br/>StatsScreen.tsx:82 bars</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag stat monument</td>
+							<td class="py-4 text-[#a0a0a0]">Restrained scale — <span class="mono text-xs">text-3xl</span> streak, <span class="mono text-xs">h-24 max 80px</span> bars — not a hero monument.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">shimmer-button.tsx<br/>text-animate.tsx</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag default type / generic motion / bounce</td>
+							<td class="py-4 text-[#a0a0a0]">Lora Variable + system sans is a chosen voice; motion is <span class="mono text-xs">easeOut</span> with <span class="mono text-xs">prefers-reduced-motion</span> support. No elastic bounce.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">Shell.tsx:13<br/>RecordOverlay.tsx:154</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag center stack on max-w-lg</td>
+							<td class="py-4 text-[#a0a0a0]"><span class="mono text-xs">max-w-lg mx-auto</span> is a PWA phone frame, not a landing safe-middle. All screens left-align headings.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">index.css:34–46</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Flag domain default trap (cream journal)</td>
+							<td class="py-4 text-[#a0a0a0]">Cream alone would be the reflex, but amber OKLCH + serif voice + grain + LiveKit aura are specific choices unpredictable from "journaling app."</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// VERIFICATION</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// RAN</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Read all 6 screens + Shell + audio player + shimmer/animate/rotate/noise + theme + CSS tokens.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Confirmed OKLCH amber palette (65–80) and shimmer <span class="mono text-xs">#ffe9c9 on #d99a3d→#b87a2a</span>.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>No accent-rail stripe, no icon-toppers, no stat monuments, no glass cards, no bounce easing.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Counted 5× identical Stats card chrome + 3× Today prompt cards — uniform repetition confirmed.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Confirmed dark-mode <span class="mono text-xs">@custom-variant + .dark</span> aliases now present in <span class="mono text-xs">index.css:4,84–97</span> (source).</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// NOT VERIFIED</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Live aura shader + mic-volume mapping (wiring inspected; requires mic).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Dark-mode canvas rendered in a running build (source fix confirmed; no screenshot this pass).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Tailwind <span class="mono text-xs">bg-canvas/90</span> opacity in built preview (inspected source only).</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+
+		<footer class="mono py-8 text-center text-xs tracking-widest text-[#444]">
+			Generated with CommandCode - 2026-08-20 &middot; /design smell &middot; .commandcode/design/smell-report.md + smell-report.html
+		</footer>
+	</main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# deps
+node_modules/
+.pnp
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env + secrets
+.env
+.env.*
+!.env.example
+
+# data
+data/
+
+# misc
+*.log
+.DS_Store
+coverage/

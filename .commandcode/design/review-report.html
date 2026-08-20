@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Willow - Review Report</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+		.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+		.report-section { border: 1px solid #222226; background: #0a0a0b; position: relative; }
+		.corner-box { position: absolute; width: 20px; height: 20px; border: 1px solid #222226; background: #000; }
+	</style>
+</head>
+<body class="bg-black text-[#fafafa]">
+	<main class="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-12">
+		<header class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// REVIEW</div>
+					<h1 class="text-4xl font-bold tracking-tight md:text-6xl">Willow</h1>
+					<p class="mt-2 text-sm text-[#a0a0a0]">Voice-first journaling PWA &middot; warm golden-hour register</p>
+				</div>
+				<div class="mono text-left text-xs text-[#666] md:text-right">
+					<div>COMMANDCODE REPORT</div>
+					<div class="text-[#444]">2026-08-20</div>
+				</div>
+			</div>
+		</header>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// OVERALL</div>
+					<div class="text-6xl font-bold tracking-tight md:text-7xl">34</div>
+					<div class="mt-1 text-lg text-[#666]">/ 50</div>
+					<div class="mt-4 inline-flex border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-3 py-1 text-sm text-[#fbbf24]">NEEDS CHANGES</div>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// TL;DR</div>
+					<p class="text-sm leading-6 text-[#a0a0a0]">A genuinely warm, authored surface: golden-hour palette, serif journal voice, truthful recording visualizer. The weaknesses are structural: the type scale leans on one weight, card chrome spreads thin, dark mode is broken in practice, and the record flow lacks recovery states.</p>
+					<p class="mt-4 text-sm leading-6 text-[#fbbf24]">PRIMARY: Wire dark-mode tokens into the semantic aliases (@custom-variant dark + .dark overrides) so Settings → Dark renders a readable warm-charcoal canvas, then run /a11y for form labels and dialog focus.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// HEURISTIC SCORES</div>
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[720px] border-collapse text-sm">
+					<thead>
+						<tr class="border-b border-[#222226] text-left mono text-xs text-[#666]">
+							<th class="py-3 pr-4 font-normal">#</th>
+							<th class="py-3 pr-4 font-normal">HEURISTIC</th>
+							<th class="py-3 pr-4 font-normal">SCORE</th>
+							<th class="py-3 font-normal">KEY FINDING</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">1</td>
+							<td class="py-4 pr-4 text-[#fafafa]">First impression</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">8/10</td>
+							<td class="py-4 text-[#a0a0a0]">Warm, authored, memorable. Serif + amber is a real identity.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">2</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Hierarchy</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">6/10</td>
+							<td class="py-4 text-[#a0a0a0]">Clear on Today; weak on Stats (equal cards, flat empty states).</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">3</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Color voice</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">7/10</td>
+							<td class="py-4 text-[#a0a0a0]">Golden palette is disciplined; dark mode is broken; danger/warning use raw reds.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">4</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Type voice</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">6/10</td>
+							<td class="py-4 text-[#a0a0a0]">Single-weight serif, small body; decent measure; tight tab labels.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">5</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Interaction feel</td>
+							<td class="py-4 pr-4 text-[#fbbf24]">7/10</td>
+							<td class="py-4 text-[#a0a0a0]">Custom player + wave visualizer are polished; missing recovery/empty/error states in record flow; no focus ring on radio-style toggles.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// COGNITIVE LOAD / RISK</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mb-3 text-xl font-semibold">Moderate</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Warm, low-contrast, private surface; no autoplay, no parallax, no carousel. prefers-reduced-motion disables the two custom animations.</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">WATCH</span>Text on low-contrast fills (mood chips, disabled calendar, text-muted on bg-accent-soft).</li>
+						<li><span class="mono mr-2 text-[#ef4444]">FAIL</span>Dark mode is unusable: the semantic palette never flips, so bg-canvas/90 stays warm-cream with white text, and text-ink stays near-black in dark mode.</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// NEXT MODES</div>
+					<div class="flex flex-wrap gap-2">
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/a11y</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/typeset</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/recolor</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/interaction</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/relayout</span>
+						<span class="border border-[#333] px-3 py-1 text-sm text-[#a0a0a0]">/finish</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// WHAT'S WORKING</div>
+			<div class="grid gap-4 md:grid-cols-3">
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Golden-hour identity</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Cream canvas, amber accent, warm noise texture: a real point of view that avoids the generic wellness palette.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Serif journal voice</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Lora serif on headings and journal text reads like a diary page, distinct from the system-sans UI chrome.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Truthful recording visualizer</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">The aura is driven by real mic volume via the LiveKit track; the flood gradient and phrases make recording feel like a ritual.</p>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// PRIORITY ISSUES</div>
+			<div class="space-y-5">
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P0 / HIGH</div>
+					<h2 class="mb-2 text-lg font-semibold">Dark mode is broken in practice</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">index.css:57-73 maps the semantic aliases to light tokens only; there is no @custom-variant dark and no .dark alias overrides. html.dark flips, but bg-canvas/90 (Shell.tsx:18) stays warm-cream with white text, and text-ink stays near-black. Settings → Dark renders an unreadable canvas.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Add @custom-variant dark and .dark overrides for canvas/surface/ink/muted/line/accent aliases so dark mode renders a warm charcoal surface.</div>
+				</article>
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P1 / MEDIUM</div>
+					<h2 class="mb-2 text-lg font-semibold">Flat type hierarchy</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">Every page heading is font-serif text-3xl font-medium (TodayScreen.tsx:63, EntriesScreen.tsx:38, StatsScreen.tsx:66, SettingsScreen.tsx:77, EntryDetailScreen.tsx:129). One size, one weight, repeated. The Lora variable font ships 400-700, so the range exists but goes unused.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Give the Today greeting a display size (text-4xl) at font-normal; settle tab screens at text-2xl.</div>
+				</article>
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P1 / MEDIUM</div>
+					<h2 class="mb-2 text-lg font-semibold">Card chrome spreads thin</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">StatsScreen.tsx:68-117 puts every stat in the same rounded-2xl border bg-surface p-5 card: streak, chart, calendar, mood list, digest. Equal weight, no hierarchy.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Let the digest sit on bg-accent-soft without a border so it reads as a letter, not a tile; tighten the mood list into a two-column grid.</div>
+				</article>
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P1 / MEDIUM</div>
+					<h2 class="mb-2 text-lg font-semibold">White glyphs on amber</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">RecordOverlay.tsx:167 (bg-accent text-white), SettingsScreen.tsx:151 (bg-accent-strong text-white), EntryDetailScreen.tsx:113 (bg-[var(--destructive)] text-white). Pure white on warm amber reads as a hard cut.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Use accent-strong for the mic/stop fills and a warm off-white (oklch 0.98 0.01 80) for glyphs; keep pure white only for true danger.</div>
+				</article>
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P1 / MEDIUM</div>
+					<h2 class="mb-2 text-lg font-semibold">Placeholder-only form fields</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">LoginScreen.tsx:39-65 and EntriesScreen.tsx:42-47 use placeholders as the only label for email, password, name, and search. Screen readers get no field name.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Add real labels (visually-hidden where appropriate) and aria-label="Search entries" on the search input.</div>
+				</article>
+				<article class="border border-[#2a1d22] bg-[#110b0d] p-5">
+					<div class="mono mb-2 text-xs text-[#f43f5e]">P2 / LOW</div>
+					<h2 class="mb-2 text-lg font-semibold">Missing states in the record flow</h2>
+					<p class="mb-4 text-sm leading-6 text-[#a0a0a0]">TodayScreen.tsx:116-129 record CTA has no loading or disabled state; ReviewScreen.tsx:86-100 tabs lack aria-controls/aria-selected sync. Transcription failure leaves no retry or cancel.</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Add a loading state to the record CTA; wire role=tablist with aria-controls and aria-selected on both tab groups; offer a retry path on transcription failure.</div>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// CONSIDERED BUT REJECTED</div>
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[720px] border-collapse text-sm">
+					<thead>
+						<tr class="border-b border-[#222226] text-left mono text-xs text-[#666]">
+							<th class="py-3 pr-4 font-normal">LOCATION</th>
+							<th class="py-3 pr-4 font-normal">CANDIDATE</th>
+							<th class="py-3 font-normal">REJECTED BECAUSE</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">index.css .flood</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Add a stronger dark-mode flood gradient</td>
+							<td class="py-4 text-[#a0a0a0]">Dark-mode tokens don't exist yet; fixing the alias layer first makes this a follow-up.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">StatsScreen.tsx bar chart</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Replace with a line chart</td>
+							<td class="py-4 text-[#a0a0a0]">The bar chart is clear and honest; a line chart adds noise for a 14-day span.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">MoodCalendar.tsx</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Add emoji icons to mood legend</td>
+							<td class="py-4 text-[#a0a0a0]">Emojis would break the warm, quiet voice; color + text labels already carry meaning.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">ShimmerButton</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Remove the shimmer entirely</td>
+							<td class="py-4 text-[#a0a0a0]">The shimmer is the golden-hour signature; keep it, just fix the glyph contrast.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 mono text-xs text-[#555]">EntriesScreen.tsx</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Add pagination</td>
+							<td class="py-4 text-[#a0a0a0]">The list is already grouped by day and searchable; pagination adds friction at MVP scale.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// VERIFICATION</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// RAN</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Read all 6 screens + Shell + audio player + shimmer button + select/switch/alert-dialog/noise-texture + theme + CSS tokens.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Confirmed Lora variable font ships 400-700 (@fontsource-variable/lora).</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Confirmed prefers-reduced-motion disables wave-bar + fade-up; animate-in/zoom-in utilities are NOT present (tw-animate-css not installed), so dialog/select open animations are likely no-ops.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Confirmed no @custom-variant dark and no .dark alias overrides in index.css - dark mode tokens never apply.</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// NOT VERIFIED</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>aria-controls/aria-selected wiring on tabs (inspected source; did not run a screen reader).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Dialog focus trap behavior (Radix handles it, but not exercised).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Whether text-warning/text-danger meet contrast in dark mode (dark mode doesn't render at all today).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Live recording aura behavior (requires mic; inspected the wiring only).</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-3 text-xs tracking-widest text-[#666]">// FIRST IMPRESSION</div>
+			<p class="text-sm leading-6 text-[#a0a0a0]">A warm, cream-and-amber diary that feels like golden hour, not a wellness template. The Lora serif on headings and journal text gives it a genuine handwritten-voice quality. The first thing I'd act on is the record button; the second is the Today greeting. The overall mood is calm and private, matching the product's promise.</p>
+			<div class="mt-6 grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// PRIMARY FLOW</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">1</span>Arrive - Today greeting + date + prompts. Warm, calm, clear.</li>
+						<li><span class="mono mr-2 text-[#34d399]">2</span>Record - Idle to tap mic to flood gradient + live aura. The aura truthfully reflects the voice.</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">3</span>Review - Cleaned/raw tabs; the fixed bottom bar overlaps content (no bottom padding on the scroll container).</li>
+						<li><span class="mono mr-2 text-[#34d399]">4</span>Save - Returns to Today. The new entry appears.</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">5</span>Failure - No retry, no cancel during processing, no way to see the saved-but-untranscribed entry until it's in the list.</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// VERDICT</div>
+					<p class="text-sm leading-6 text-[#a0a0a0]">The surface has a strong, warm, authored identity and the core record flow is genuinely good. The dark-mode breakage is a HIGH that must be fixed before polish, and the type-scale, layout, and form-label findings are focused follow-ups. Once the dark tokens and form labels land, this is an Approve.</p>
+				</div>
+			</div>
+		</section>
+
+		<footer class="mono py-8 text-center text-xs tracking-widest text-[#444]">
+			Generated with CommandCode - 2026-08-20
+		</footer>
+	</main>
+</body>
+</html>

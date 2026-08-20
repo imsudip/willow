@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Willow - Checkup Report</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+		.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+		.report-section { border: 1px solid #222226; background: #0a0a0b; position: relative; }
+		.corner-box { position: absolute; width: 20px; height: 20px; border: 1px solid #222226; background: #000; }
+	</style>
+</head>
+<body class="bg-black text-[#fafafa]">
+	<main class="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-12">
+		<header class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// CHECKUP</div>
+					<h1 class="text-4xl font-bold tracking-tight md:text-6xl">Willow</h1>
+					<p class="mt-2 text-sm text-[#a0a0a0]">Voice-first journaling PWA &middot; golden-hour register &middot; apps/web</p>
+				</div>
+				<div class="mono text-left text-xs text-[#666] md:text-right">
+					<div>COMMANDCODE REPORT</div>
+					<div class="text-[#444]">2026-08-20</div>
+				</div>
+			</div>
+		</header>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="corner-box left-0 top-0 -translate-x-1/2 -translate-y-1/2"></div>
+			<div class="corner-box right-0 top-0 translate-x-1/2 -translate-y-1/2"></div>
+			<div class="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+				<div>
+					<div class="mono mb-2 text-xs tracking-widest text-[#666]">// OVERALL</div>
+					<div class="text-6xl font-bold tracking-tight md:text-7xl">45<span class="text-3xl font-normal text-[#555]">/60</span></div>
+					<div class="mt-4 inline-flex border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-3 py-1 text-sm text-[#fbbf24]">NEEDS CHANGES</div>
+					<p class="mono mt-3 text-xs text-[#666]">0 Critical &middot; 3 Watch &middot; 3 Healthy</p>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// TL;DR</div>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Healthy core — warm OKLCH palette, Lora serif, flood ritual + LiveKit aura, film grain, tight PWA shell. Watches cluster on hierarchy and surface sameness (Stats 5 equal cards, Today 3 equal prompt cards) plus small a11y/type polish. Dark-mode wiring (previously HIGH) is now present in source.</p>
+					<p class="mt-4 text-sm leading-6 text-[#fbbf24]">Fix the uniform <span class="mono text-xs">rounded-2xl border bg-surface</span> repetition on Stats + Today so the digest reads as a letter, then tighten tiny type and tab semantics.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// VITAL SIGNS</div>
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[720px] border-collapse text-sm">
+					<thead>
+						<tr class="border-b border-[#222226] text-left mono text-xs text-[#666]">
+							<th class="py-3 pr-4 font-normal">#</th>
+							<th class="py-3 pr-4 font-normal">VITAL</th>
+							<th class="py-3 pr-4 font-normal">STATUS</th>
+							<th class="py-3 pr-4 font-normal">SCORE</th>
+							<th class="py-3 font-normal">KEY FINDING</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">1</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Intentionality</td>
+							<td class="py-4 pr-4"><span class="border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-1 text-xs text-[#34d399]">HEALTHY</span></td>
+							<td class="py-4 pr-4 text-[#34d399]">10/10</td>
+							<td class="py-4 text-[#a0a0a0]">Amber OKLCH + Lora + flood + grain + aura — chosen, not default.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">2</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Readability</td>
+							<td class="py-4 pr-4"><span class="border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-2 py-1 text-xs text-[#fbbf24]">WATCH</span></td>
+							<td class="py-4 pr-4 text-[#fbbf24]">5/10</td>
+							<td class="py-4 text-[#a0a0a0]">Journal <span class="mono text-xs">1.0625rem/1.7 70ch</span> good; chart <span class="mono text-xs">10px</span> sits at the edge.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">3</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Usability</td>
+							<td class="py-4 pr-4"><span class="border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-2 py-1 text-xs text-[#fbbf24]">WATCH</span></td>
+							<td class="py-4 pr-4 text-[#fbbf24]">5/10</td>
+							<td class="py-4 text-[#a0a0a0]">Record→Review→Today completes; record CTA lacks busy state, tabs lack semantics.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">4</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Responsiveness</td>
+							<td class="py-4 pr-4"><span class="border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-1 text-xs text-[#34d399]">HEALTHY</span></td>
+							<td class="py-4 pr-4 text-[#34d399]">10/10</td>
+							<td class="py-4 text-[#a0a0a0]"><span class="mono text-xs">max-w-lg</span> + safe-area insets; no break at 320px.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">5</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Speed</td>
+							<td class="py-4 pr-4"><span class="border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-1 text-xs text-[#34d399]">HEALTHY</span></td>
+							<td class="py-4 pr-4 text-[#34d399]">10/10</td>
+							<td class="py-4 text-[#a0a0a0]">No heavy media; workbox precache; <span class="mono text-xs">fade-up 0.3s</span>; respects reduced-motion.</td>
+						</tr>
+						<tr class="border-b border-[#1a1a1e]">
+							<td class="py-4 pr-4 text-[#555]">6</td>
+							<td class="py-4 pr-4 text-[#fafafa]">Accessibility</td>
+							<td class="py-4 pr-4"><span class="border border-[#fbbf24]/30 bg-[#fbbf24]/10 px-2 py-1 text-xs text-[#fbbf24]">WATCH</span></td>
+							<td class="py-4 pr-4 text-[#fbbf24]">5/10</td>
+							<td class="py-4 text-[#a0a0a0]">Labels + search <span class="mono text-xs">aria-label</span> present; tabs miss <span class="mono text-xs">aria-controls</span>; sub-12px at edge.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// WHAT'S WORKING</div>
+			<div class="grid gap-4 md:grid-cols-3">
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Golden-hour identity</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Cream canvas + amber accents + warm grain — authored, not the wellness default.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Tight PWA shell</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]"><span class="mono text-xs">max-w-lg</span> + safe-area + <span class="mono text-xs">viewport-fit=cover</span>; single-column journal is thumb-reachable.</p>
+				</article>
+				<article class="border border-[#1f1f24] p-4">
+					<h2 class="mb-2 text-sm font-semibold">Truthful ritual</h2>
+					<p class="text-sm leading-6 text-[#a0a0a0]">Flood + LiveKit aura tied to real mic volume makes recording feel like a ritual, not a button.</p>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// PRESCRIPTIONS</div>
+			<div class="space-y-5">
+				<article class="border border-[#2a2a1e] bg-[#111009] p-5">
+					<div class="mono mb-2 text-xs text-[#fbbf24]">MEDIUM &middot; Layout — Stats card chrome</div>
+					<h2 class="mb-2 text-lg font-semibold">5 equal cards flatten the scan path</h2>
+					<p class="mb-3 text-sm leading-6 text-[#a0a0a0]">Streak, 14-day chart, mood calendar, moods-lately, and digest all share <span class="mono text-xs">rounded-2xl border bg-surface p-5</span>. Equal chrome, equal weight — the digest (emotional payoff) reads like another widget.</p>
+					<p class="mono mb-3 text-xs text-[#666]">StatsScreen.tsx:68–145</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Keep streak + chart bordered; render digest as borderless <span class="mono text-xs">bg-accent-soft p-6 rounded-2xl</span> letter; flatten "Moods lately" to divided rows. Deslops the faint tile-grid smell.</div>
+				</article>
+				<article class="border border-[#2a2a1e] bg-[#111009] p-5">
+					<div class="mono mb-2 text-xs text-[#fbbf24]">MEDIUM &middot; Layout — Today prompts</div>
+					<h2 class="mb-2 text-lg font-semibold">3 equal prompt cards with no priority</h2>
+					<p class="mb-3 text-sm leading-6 text-[#a0a0a0]">Today renders 3 identical <span class="mono text-xs">rounded-2xl border bg-surface p-4</span> prompts — the interior-app mirror of the feature tile grid.</p>
+					<p class="mono mb-3 text-xs text-[#666]">TodayScreen.tsx:98–104</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Single <span class="mono text-xs">overflow-hidden rounded-2xl border divide-y</span> card; first prompt <span class="mono text-xs">bg-accent-soft/40 text-[1.1875rem]</span>, others quiet. One hero, two supporting.</div>
+				</article>
+				<article class="border border-[#2a2a1e] bg-[#111009] p-5">
+					<div class="mono mb-2 text-xs text-[#fbbf24]">MEDIUM &middot; A11y — tab semantics</div>
+					<h2 class="mb-2 text-lg font-semibold">Tab groups lack aria relationship</h2>
+					<p class="mb-3 text-sm leading-6 text-[#a0a0a0]"><span class="mono text-xs">role="tablist"</span> present, but tabs miss synced <span class="mono text-xs">aria-controls</span>/<span class="mono text-xs">aria-selected</span> and matching panel ids.</p>
+					<p class="mono mb-3 text-xs text-[#666]">ReviewScreen.tsx:86–100 &middot; EntryDetailScreen.tsx:153–169</p>
+					<div class="border-l border-[#fbbf24] pl-4 text-sm leading-6 text-[#fbbf24]">FIX: Wire <span class="mono text-xs">aria-selected</span> + <span class="mono text-xs">aria-controls="review-panel-{t}"</span> with matching panel <span class="mono text-xs">id</span>.</div>
+				</article>
+			</div>
+		</section>
+
+		<section class="report-section mb-8 p-6 md:p-8">
+			<div class="mono mb-6 text-xs tracking-widest text-[#666]">// VERIFICATION</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// RAN</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>All 6 screens + Shell + player + shimmer + theme + tokens.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Dark-mode <span class="mono text-xs">@custom-variant + .dark</span> aliases confirmed in <span class="mono text-xs">index.css</span>.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>Tabbed core path in source; <span class="mono text-xs">role="tablist"</span> found, <span class="mono text-xs">aria-controls</span> missing confirmed.</li>
+						<li><span class="mono mr-2 text-[#34d399]">PASS</span>320px: single column, no overflow; safe-area insets present.</li>
+					</ul>
+				</div>
+				<div>
+					<div class="mono mb-3 text-xs tracking-widest text-[#666]">// NOT VERIFIED</div>
+					<ul class="space-y-3 text-sm text-[#a0a0a0]">
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Runtime dark canvas screenshot.</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Live aura shader (requires mic).</li>
+						<li><span class="mono mr-2 text-[#fbbf24]">GAP</span>Screen-reader tab announcements.</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+
+		<footer class="mono py-8 text-center text-xs tracking-widest text-[#444]">
+			Generated with CommandCode - 2026-08-20 &middot; /design checkup &middot; .commandcode/design/checkup-report.md + checkup-report.html
+		</footer>
+	</main>
+</body>
+</html>
