@@ -107,7 +107,7 @@ export function MoodCalendar({ entries }: { entries: Entry[] }) {
               }`}
               style={
                 info?.mood
-                  ? { backgroundColor: "oklch(0.85 0.08 75)", color: "oklch(0.25 0.03 70)" }
+                  ? { backgroundColor: "var(--color-accent-soft)", color: "var(--color-ink)" }
                   : undefined
               }
             >

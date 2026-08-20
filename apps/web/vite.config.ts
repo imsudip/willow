@@ -24,8 +24,8 @@ export default defineConfig({
         name: "Willow",
         short_name: "Willow",
         description: "Voice-first journaling. Ramble at the end of the day.",
-        theme_color: "#1f1a12",
-        background_color: "#faf5ec",
+        theme_color: "#fffbf0",
+        background_color: "#fffbf0",
         display: "standalone",
         start_url: "/",
         icons: [

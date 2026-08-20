@@ -21,7 +21,7 @@ export function LiveWaveform({
   width = 320,
   height = 80,
   barCount = 48,
-  barColor = "#b87a2a",
+  barColor = "var(--color-accent-strong)",
   className,
 }: LiveWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
