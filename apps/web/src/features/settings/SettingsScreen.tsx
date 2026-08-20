@@ -147,7 +147,7 @@ export function SettingsScreen() {
 
         <button
           onClick={save}
-          className="w-full rounded-xl bg-accent-strong py-2.5 text-sm font-medium text-[#fdf7ea]"
+          className="w-full rounded-xl bg-accent-strong py-2.5 text-sm font-medium text-white"
         >
           {saved ? "Saved" : "Save settings"}
         </button>
