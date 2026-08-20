@@ -37,9 +37,13 @@ export function EntriesScreen() {
     <div className="fade-up space-y-4">
       <h1 className="pt-2 font-serif text-2xl font-normal text-balance">Entries</h1>
 
+      <label htmlFor="entries-search" className="sr-only">
+        Search entries
+      </label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
         <input
+          id="entries-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search your words"

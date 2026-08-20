@@ -105,8 +105,8 @@ export async function createRecorder(): Promise<RecorderHandle> {
   };
 }
 
-export function enforceMaxDuration(recorder: RecorderHandle) {
+export function enforceMaxDuration(recorder: RecorderHandle, onMax?: () => void) {
   return setTimeout(() => {
-    void recorder.stop();
+    onMax?.();
   }, MAX_RECORDING_MS);
 }

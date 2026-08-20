@@ -67,7 +67,7 @@ export function RecordOverlay() {
       setRecorder(recorder);
       await recorder.start();
       setPhase("recording");
-      enforceMaxDuration(recorder);
+      enforceMaxDuration(recorder, () => void stop());
     } catch {
       setError("Mic access was denied. Enable the microphone in your browser settings, then try again.");
     }
@@ -76,6 +76,7 @@ export function RecordOverlay() {
   async function stop() {
     const recorder = recorderRef.current;
     if (!recorder) return;
+    recorderRef.current = null;
     setPhase("processing");
     const blob = await recorder.stop();
     const durationMs = recorder.getDurationMs();
