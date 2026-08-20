@@ -70,7 +70,7 @@ export function ReviewScreen() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-28 pt-4">
+    <div className="mx-auto max-w-lg px-4 pb-44 pt-4">
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}

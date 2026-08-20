@@ -126,6 +126,7 @@ export function EntryDetailScreen() {
           by="word"
           animation="blurIn"
           duration={0.4}
+          accessible={false}
           className="font-serif text-3xl font-normal leading-tight text-balance"
         >
           {current.title || "Untitled"}

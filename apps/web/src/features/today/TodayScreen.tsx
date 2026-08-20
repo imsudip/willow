@@ -48,7 +48,7 @@ export function TodayScreen() {
   return (
     <div className="fade-up space-y-8">
       {offline && (
-        <div className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning">
+        <div className="rounded-xl border border-warning/30 bg-warning-tint px-4 py-2 text-sm font-medium text-warning">
           Offline — entries will sync when you're back online.
         </div>
       )}
@@ -60,6 +60,7 @@ export function TodayScreen() {
           by="word"
           animation="blurInUp"
           duration={0.5}
+          accessible={false}
           className="mt-1 font-serif text-4xl font-normal leading-tight text-balance"
         >
           {`${greeting()}${firstName ? `, ${firstName}` : ""}`}
