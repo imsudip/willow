@@ -194,7 +194,7 @@ export function ReviewScreen() {
           <button
             onClick={save}
             disabled={saving}
-            className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent-strong py-3 text-sm font-medium text-white disabled:opacity-60"
+            className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-medium text-ink disabled:opacity-60"
           >
             {saving ? <RotateCcw className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
             Save entry

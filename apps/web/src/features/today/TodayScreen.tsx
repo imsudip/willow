@@ -118,10 +118,10 @@ export function TodayScreen() {
         <ShimmerButton
           onClick={() => navigate("/record")}
           aria-label="Start recording"
-          shimmerColor="#ffffff"
+          shimmerColor="#e8dbff"
           shimmerSize="0.08em"
-          background="var(--color-accent-strong)"
-          className="h-24 w-24 rounded-full p-0 shadow-lg shadow-accent/30"
+          background="radial-gradient(circle, #fff8ed 0%, #f8eedc 100%)"
+          className="h-24 w-24 rounded-full p-0 text-ink shadow-[0_0_30px_rgba(199,169,255,0.35)]"
         >
           <Mic className="h-10 w-10" strokeWidth={1.8} aria-hidden />
         </ShimmerButton>

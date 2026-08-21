@@ -83,7 +83,7 @@ export function LoginScreen() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-xl bg-accent-strong py-3 font-medium text-white disabled:opacity-60"
+            className="w-full rounded-xl bg-accent py-3 font-medium text-ink disabled:opacity-60"
           >
             {busy ? "One moment…" : mode === "signup" ? "Create account" : "Sign in"}
           </button>
