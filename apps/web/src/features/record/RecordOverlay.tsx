@@ -165,7 +165,8 @@ export function RecordOverlay() {
           <button
             onClick={start}
             aria-label="Start recording"
-            className="flex h-28 w-28 items-center justify-center rounded-full bg-accent-strong text-white shadow-xl shadow-accent/40 transition-transform active:scale-95"
+            className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-accent text-ink shadow-[0_0_30px_rgba(199,169,255,0.35)] transition-transform active:scale-95"
+            style={{ background: "radial-gradient(circle, #fff8ed 0%, #f8eedc 100%)" }}
           >
             <Mic className="h-12 w-12" strokeWidth={1.6} aria-hidden />
           </button>
@@ -189,7 +190,7 @@ export function RecordOverlay() {
             <AgentAudioVisualizerAura
               audioTrack={recorder.liveKitTrack}
               state="speaking"
-              color="#8b7cf0"
+              color="#b892ff"
               themeMode="light"
               size="xl"
               className="h-full"

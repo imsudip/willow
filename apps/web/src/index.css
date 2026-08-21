@@ -3,7 +3,7 @@
 /* Dark mode is opt-in via the `dark` class on <html> (never follows the OS by default) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Observatory design tokens — cream & lavender */
+/* Observatory design tokens — peach & cream with lavender whispers */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -30,39 +30,51 @@
     }
   }
 
-  /* Light — cream / lavender whisper (Observatory) */
-  --color-canvas: oklch(0.98 0.015 85);
-  --color-surface: oklch(1 0 0);
-  --color-surface-2: oklch(0.96 0.015 85);
-  --color-ink: oklch(0.22 0.02 75);
-  --color-muted: oklch(0.3 0.015 290);
-  --color-line: oklch(0.91 0.015 85);
-  --color-accent: oklch(0.55 0.12 295);
-  --color-accent-strong: oklch(0.34 0.14 295);
-  --color-accent-soft: oklch(0.95 0.04 295);
-  --color-success: oklch(0.55 0.12 140);
-  --color-warning: oklch(0.36 0.13 80);
-  --color-warning-tint: oklch(0.94 0.05 80);
-  --color-danger: oklch(0.45 0.17 30);
-  --color-night: oklch(0.2 0.02 70);
+  /* Light — warm ivory & soft lavender (calm premium journal) */
+  --color-canvas: #f7f1ea;
+  --color-surface: #fbf8f4;
+  --color-surface-2: #efe6dd;
+  --color-elevated: #fefcf9;
+  --color-ink: #1e1a17;
+  --color-muted: #6e665f;
+  --color-faint: #9b948d;
+  --color-line: #e5ddd5;
+  --color-accent: #c7a9ff;
+  --color-accent-strong: #b892ff;
+  --color-accent-deep: #7255b0;
+  --color-accent-soft: #e8dbff;
+  --color-accent-glow: #f2ebff;
+  --color-success: #7dbe8a;
+  --color-warning: #8a641d;
+  --color-warning-tint: #f6ead0;
+  --color-danger: #a94e3a;
+  --color-night: #1e1a17;
 
   /* Dark — lavender-tinted charcoal */
-  --color-canvas-dark: oklch(0.19 0.015 295);
-  --color-surface-dark: oklch(0.24 0.015 295);
-  --color-surface-2-dark: oklch(0.27 0.015 295);
-  --color-ink-dark: oklch(0.93 0.015 295);
-  --color-muted-dark: oklch(0.7 0.015 295);
-  --color-line-dark: oklch(0.32 0.015 295);
-  --color-accent-dark: oklch(0.76 0.1 295);
-  --color-accent-soft-dark: oklch(0.28 0.04 295);
+  --color-canvas-dark: #262230;
+  --color-surface-dark: #2e2939;
+  --color-surface-2-dark: #383348;
+  --color-elevated-dark: #332e40;
+  --color-ink-dark: #f1edf8;
+  --color-muted-dark: #b5aec0;
+  --color-faint-dark: #8d869a;
+  --color-line-dark: #423c52;
+  --color-accent-dark: #c7a9ff;
+  --color-accent-strong-dark: #b892ff;
+  --color-accent-deep-dark: #d8c4ff;
+  --color-accent-soft-dark: #3b3450;
+  --color-accent-glow-dark: #322c45;
+  --color-success-dark: #7dbe8a;
+  --color-warning-dark: #e2c88a;
+  --color-danger-dark: #c96a52;
 
   /* Semantic aliases mapped to the observatory palette */
   --background: var(--color-canvas);
   --foreground: var(--color-ink);
   --card: var(--color-surface);
   --card-foreground: var(--color-ink);
-  --primary: var(--color-accent-strong);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-ink);
   --secondary: var(--color-surface-2);
   --secondary-foreground: var(--color-ink);
   --muted: var(--color-surface-2);
@@ -72,7 +84,7 @@
   --destructive: var(--color-danger);
   --border: var(--color-line);
   --input: var(--color-line);
-  --ring: var(--color-accent-strong);
+  --ring: var(--color-accent-deep);
   --radius: 1rem;
 }
 
@@ -85,16 +97,23 @@
   --color-canvas: var(--color-canvas-dark);
   --color-surface: var(--color-surface-dark);
   --color-surface-2: var(--color-surface-2-dark);
+  --color-elevated: var(--color-elevated-dark);
   --color-ink: var(--color-ink-dark);
   --color-muted: var(--color-muted-dark);
+  --color-faint: var(--color-faint-dark);
   --color-line: var(--color-line-dark);
   --color-accent: var(--color-accent-dark);
-  --color-accent-strong: oklch(0.5 0.13 295);
+  --color-accent-strong: var(--color-accent-strong-dark);
+  --color-accent-deep: var(--color-accent-deep-dark);
   --color-accent-soft: var(--color-accent-soft-dark);
+  --color-accent-glow: var(--color-accent-glow-dark);
+  --color-success: var(--color-success-dark);
+  --color-warning: var(--color-warning-dark);
+  --color-danger: var(--color-danger-dark);
 
-  --primary-foreground: oklch(0.15 0.02 70);
-  --destructive: oklch(0.68 0.16 30);
-  --color-warning-tint: oklch(0.18 0.04 80);
+  --primary-foreground: var(--color-ink-dark);
+  --destructive: var(--color-danger-dark);
+  --color-warning-tint: oklch(0.2 0.04 80);
 }
 
 @layer base {
@@ -122,12 +141,29 @@
   }
   /* Accessible focus */
   :focus-visible {
-    outline: 2px solid var(--color-accent-strong);
+    outline: 2px solid var(--color-accent-deep);
     outline-offset: 2px;
   }
 }
 
 @layer components {
+  /* Card — cream white, hairline border, soft shadow */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    padding: 20px;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.03),
+      0 6px 20px rgb(0 0 0 / 0.04);
+  }
+  /* Pill — spec: beige fill, secondary text, full radius */
+  .pill {
+    background: var(--color-surface-2);
+    color: var(--color-muted);
+    border-radius: 999px;
+    padding: 6px 12px;
+  }
   /* Journal body */
   .journal {
     font-family: var(--font-serif);
@@ -197,15 +233,15 @@
 
 .flood {
   background:
-    radial-gradient(120% 90% at 50% 110%, oklch(0.82 0.1 295 / 0.45), transparent 60%),
-    radial-gradient(90% 70% at 50% 0%, oklch(0.96 0.04 295 / 0.6), transparent 55%),
-    oklch(0.98 0.015 85);
+    radial-gradient(120% 90% at 50% 110%, #c7a9ff33, transparent 60%),
+    radial-gradient(90% 70% at 50% 0%, #f2ebff, transparent 55%),
+    #f7f1ea;
 }
 .dark .flood {
   background:
-    radial-gradient(120% 90% at 50% 110%, oklch(0.4 0.1 295 / 0.5), transparent 60%),
-    radial-gradient(90% 70% at 50% 0%, oklch(0.3 0.05 295 / 0.6), transparent 55%),
-    oklch(0.19 0.015 295);
+    radial-gradient(120% 90% at 50% 110%, #b892ff40, transparent 60%),
+    radial-gradient(90% 70% at 50% 0%, #3b3450, transparent 55%),
+    #262230;
 }
 
 /* Gentle fade-in used across screens */
