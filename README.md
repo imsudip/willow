@@ -10,6 +10,12 @@ Voice-first journaling PWA. Ramble at the end of the day; the app transcribes, c
 - **Architecture** — see [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit (Vercel + Neon + Cloudflare R2 + GitHub Actions, all free-tier)
 - **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, scripts, and DB workflows
 
+## Screenshots
+
+| Today | Entry | Stats | Weekly digest | Settings |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshots/today.webp" alt="Today screen" width="180"> | <img src="assets/screenshots/entry.webp" alt="Entry detail with audio player" width="180"> | <img src="assets/screenshots/stats.webp" alt="Stats with streak, activity, mood calendar" width="180"> | <img src="assets/screenshots/stats-digest.webp" alt="Weekly digest" width="180"> | <img src="assets/screenshots/settings.webp" alt="Settings" width="180"> |
+
 ## Repo
 
 - `apps/web` — React + Vite PWA (mobile-first, warm "golden hour" design)
