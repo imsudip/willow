@@ -12,25 +12,34 @@ only — OpenAI usage stays metered pay-per-token).
 
 ## 1. Big picture
 
-```text
-┌─────────────────────┐        ┌──────────────────────────────┐
-│  Browser (PWA)      │  /api/*│  Neon Functions (Node 24)     │
-│  React + Vite       │ ─────▶ │  Hono app (src/function.ts)   │
-│  IndexedDB (Dexie)  │        │  Better Auth (sessions)       │
-│  Service worker     │        │  Drizzle ORM                  │
-└─────────┬───────────┘        └───────┬───────────┬───────────┘
-          │ presigned PUT/GET          │ SQL        │
-          ▼                            ▼           ▼
-   ┌──────────────┐            ┌──────────────┐  ┌──────────────────┐
-   │ Cloudflare R2│            │ Neon Postgres│  │ OpenAI API       │
-   │ audio files  │            │ entries,     │  │ transcription +  │
-   │ (10 GB free) │            │ users, ...   │  │ cleanup/digest   │
-   └──────────────┘            └──────────────┘  └──────────────────┘
-          ▲
-          │ cron triggers (GitHub Actions)
-   ┌──────┴───────┐
-   │ Vercel       │  static PWA + /api proxy (vercel.json)
-   └──────────────┘
+```mermaid
+flowchart LR
+    subgraph Client["Browser (PWA)"]
+        R[React + Vite]
+        IDB[(IndexedDB / Dexie)]
+        SW[Service worker]
+    end
+
+    subgraph Edge["Vercel"]
+        V[Static PWA + /api proxy]
+    end
+
+    subgraph Compute["Neon Functions (Node 24)"]
+        A[Hono app<br/>Better Auth · Drizzle ORM]
+    end
+
+    DB[(Neon Postgres<br/>entries, users, ...)]
+    R2[(Cloudflare R2<br/>audio files)]
+    O[OpenAI API<br/>transcription + cleanup/digest]
+    GH[GitHub Actions<br/>cron triggers]
+
+    R -- /api/* --> V
+    V -- /api/* proxied --> A
+    A -- SQL --> DB
+    A -- presigned PUT/GET --> R2
+    A --> O
+    R -- audio (presigned) --> R2
+    GH -. schedule .-> V
 ```
 
 | Piece | Host | Role |
@@ -95,19 +104,28 @@ see "Deploy" below).
 
 ## 3. The audio flow (R2 presigned URLs)
 
-```
-Client                    API (Neon)                 R2
-  │  POST /api/entries/:id/audio-url  │                │
-  │ ────────────────────────────────▶ │ 1. check usage │
-  │                                  │ 2. check quota │
-  │                                  │ 3. mint PUT URL│
-  │  { uploadUrl } ◀───────────────── │                │
-  │  PUT audio blob ─────────────────────────────────▶│  (never touches API)
-  │  POST /api/entries/:id/audio-complete ▶ 4. HEAD ✓ │
-  │                                  │ 5. mark present│
-  │  GET /api/entries/:id/audio ────▶ │  mint GET URL  │
-  │  { url } ◀─────────────────────── │                │
-  │  GET (presigned) ────────────────────────────────▶│
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Browser (PWA)
+    participant A as API (Neon)
+    participant R as Cloudflare R2
+
+    C->>A: POST /api/entries/:id/audio-url
+    A->>A: check bucket usage
+    A->>A: check upload quota
+    A->>R: mint presigned PUT URL
+    A-->>C: { uploadUrl }
+
+    C->>R: PUT audio blob (never touches API)
+    C->>A: POST /api/entries/:id/audio-complete
+    A->>R: HEAD object (confirm exists)
+    A-->>C: ok — entry marked audioPresent
+
+    C->>A: GET /api/entries/:id/audio
+    A->>R: mint presigned GET URL
+    A-->>C: { url }
+    C->>R: GET (presigned, Range-aware)
 ```
 
 - Upload URLs: **1-hour expiry**, `Content-Type: audio/webm` pinned in the
@@ -201,7 +219,7 @@ not exactly on it — fine for a journaling nudge.
 
 The Neon CLI's `neon functions deploy --src` only ships the esbuild output —
 **not** sibling folders — so the Drizzle `drizzle/` migrations folder would be
-missing at runtime. `apps/api/scripts/deploy-function.mjs` handles this:
+missing at runtime. `apps/api/scripts/neon-deploy.mjs` handles this:
 
 1. `tsc` build + esbuild bundle (`dist/function.mjs`) — everything inlined
    except `pg-native` (aliased to a stub; it's an unused optional native dep of
@@ -216,14 +234,16 @@ before this tracking existed (e.g. via `drizzle-kit push`), the bootstrap
 one-time-reconciles the journal into the tracking table so existing schemas
 are treated as already migrated.
 
-Run it with:
+In CI, `.github/workflows/deploy.yml` runs this on every push to `main`:
 
 ```bash
-export NEON_API_KEY=$(neon api-keys create --name deploy --output json | jq -r .key)
-node apps/api/scripts/deploy-function.mjs
+node apps/api/scripts/neon-deploy.mjs   # env comes from CI secrets/vars
 ```
 
 ### Vercel (the frontend)
+
+Deployed by the same `deploy.yml` pipeline (`vercel pull` → `vercel build
+--prod` → `vercel deploy --prebuilt --prod`), or manually:
 
 ```bash
 cd apps/web
@@ -251,7 +271,8 @@ function URL stays out of the repo. Set it in the Vercel project settings:
 
 ## 8. Environment variables
 
-See `apps/api/.env.example` for the annotated list. The critical ones:
+See the single root `.env.example` for the annotated list (one file for every
+service). The critical ones:
 
 | Var | Required | Notes |
 |---|---|---|

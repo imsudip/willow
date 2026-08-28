@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an idea for Willow
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting! Please describe the problem you're trying to
+        solve, not just the solution — that helps us design something that fits.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's the issue or gap you're facing? Why do you need this?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What do you imagine this looks like in the app?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What workarounds have you tried? Any alternative designs?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched for an existing request first
+          required: true

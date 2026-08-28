@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env-load.js";
 import { z } from "zod";
 import { DEFAULT_CLEANUP_MODEL, DEFAULT_TRANSCRIPTION_MODEL } from "@willow/shared";
 
