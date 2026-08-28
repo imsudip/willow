@@ -165,7 +165,9 @@ console.log(`  URL: ${baseUrl}/`);
 
 // Optional post-deploy health check so the pipeline knows the API actually boots.
 if (process.env.WILLOW_SKIP_HEALTHCHECK !== "1") {
-    const healthUrl = process.env.WILLOW_HEALTH_URL ?? `${baseUrl}/api/health`;
+    // Use || (not ??) so an empty-string WILLOW_HEALTH_URL falls back to the
+    // derived base URL — the workflow sets the var to '' when unconfigured.
+    const healthUrl = (process.env.WILLOW_HEALTH_URL || `${baseUrl}/api/health`);
     try {
         const start = Date.now();
         const res = await fetch(healthUrl);
