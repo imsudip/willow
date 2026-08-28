@@ -207,7 +207,9 @@ vercel teams ls                   # → team slug (not the orgId)
 **Where (UI):** [vercel.com/account/tokens](https://vercel.com/account/tokens) → **Create Token**
 
 1. Name it (e.g. `ci`).
-2. **Scope:** team `imsudips-projects` → project `willow` (recommended) or Full Account.
+2. **Scope:** ⚠️ must be **team `imsudip's projects` → "All Projects"** (i.e. a
+   **team-scoped** token), or Full Account. A **project-scoped** token breaks
+   `vercel pull` ("Could not retrieve Project Settings" — [vercel/vercel#17506](https://github.com/vercel/vercel/issues/17506)).
 3. Set an **expiration** (note: expired tokens break the deploy pipeline).
 4. **Create** → copy the `vcp_...` token (shown once).
 
