@@ -14,6 +14,10 @@ on:
       timezone: "Asia/Kolkata"
   workflow_dispatch: # allow manual runs for testing
 
+# The jobs only curl a public endpoint with a secret header — no GITHUB_TOKEN
+# usage, so disable the default permissions entirely.
+permissions: {}
+
 jobs:
   reminder:
     name: Evening reminder

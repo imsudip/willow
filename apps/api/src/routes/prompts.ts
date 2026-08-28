@@ -4,13 +4,16 @@ import { CONTEXT_BODY_CHARS, PROMPT_COUNT } from "@willow/shared";
 import { db } from "../db/index.js";
 import { entries, prompts } from "../db/schema.js";
 import { getSessionUser } from "../lib/auth-helpers.js";
+import { dateKeyInZone } from "../lib/timezone.js";
+import { env } from "../env.js";
 import { generatePrompts, FALLBACK_PROMPTS } from "../services/prompts.js";
 
 export const promptsRoutes = new Hono();
 
+// The prompt cache date must match the zone the scheduled jobs run in, or
+// /daily and /reminder would read/write different calendar days.
 function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return dateKeyInZone(new Date(), env.CRON_TIMEZONE);
 }
 
 function daysAgo(date: Date) {

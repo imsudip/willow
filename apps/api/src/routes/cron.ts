@@ -6,6 +6,7 @@ import { sendToUser } from "../services/push.js";
 import { generatePrompts } from "../services/prompts.js";
 import { SERVER_AUDIO_RETENTION_DAYS } from "@willow/shared";
 import { deleteAudio } from "../lib/r2.js";
+import { dateKeyInZone, startOfDayInZone } from "../lib/timezone.js";
 import { env } from "../env.js";
 
 export const cronRoutes = new Hono();
@@ -36,7 +37,7 @@ cronRoutes.post("/reminder", async (c) => {
     if (today.length > 0) continue;
 
     let body = "Time for your evening ramble?";
-    const key = dateKey(new Date());
+    const key = dateKeyInZone(new Date(), env.CRON_TIMEZONE);
     const cached = await db
       .select()
       .from(prompts)
@@ -97,25 +98,3 @@ cronRoutes.post("/retention", async (c) => {
   }
   return c.json({ ok: true, pruned });
 });
-
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Midnight (start of day) in a given IANA timezone, as a UTC Date. */
-function startOfDayInZone(now: Date, timeZone: string): Date {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const iso = `${get("year")}-${get("month")}-${get("day")}T00:00:00.000Z`;
-  const asUtc = Date.parse(iso);
-
-  // The wall-clock midnight above is correct *in the zone*, but the Date
-  // carries the UTC instant only if we shift it by the zone's UTC offset.
-  const offsetMs = now.getTime() - asUtc;
-  return new Date(asUtc + offsetMs);
-}
