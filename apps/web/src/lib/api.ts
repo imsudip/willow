@@ -52,23 +52,41 @@ export const client = {
       `/api/entries/sync?since=${encodeURIComponent(since ?? "")}`,
     ),
 
-  // Upload audio: mint a presigned R2 PUT URL from the API, upload straight
-  // to R2 (never through the API function), then tell the API the upload
-  // landed so the entry is marked as having audio.
+  // Upload audio: mint a presigned R2 PUT URL from the API (declaring the
+  // exact blob size, which the server validates and signs), upload straight
+  // to R2 (never through the API function), then confirm completion so the
+  // entry is marked as having audio. On any failure after minting, release
+  // the reserved quota slot so retries don't burn the daily cap.
   uploadAudio: async (entryId: string, blob: Blob) => {
     const { uploadUrl } = await api<{ uploadUrl: string }>(
       `/api/entries/${entryId}/audio-url`,
-      { method: "POST" },
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size: blob.size }),
+      },
     );
-    const res = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": "audio/webm" },
-      body: blob,
-    });
-    if (!res.ok) throw new Error(`Upload failed (${res.status})`);
-    return api<{ ok: boolean }>(`/api/entries/${entryId}/audio-complete`, {
-      method: "POST",
-    });
+    try {
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/webm" },
+        body: blob,
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      return await api<{ ok: boolean }>(`/api/entries/${entryId}/audio-complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size: blob.size }),
+      });
+    } catch (err) {
+      // The PUT or completion failed; give the quota slot back so the next
+      // sync attempt can mint again without consuming the daily cap.
+      await api<{ ok: boolean }>(`/api/entries/${entryId}/audio-release`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).catch(() => null);
+      throw err;
+    }
   },
 
   // Mint a short-lived presigned GET URL for playback.

@@ -37,22 +37,37 @@ export async function migrate() {
   // runs (the old bootstrap skipped migrations entirely, or the schema was
   // created via `drizzle-kit push`) have the tables but no
   // __drizzle_migrations row, so the migrator would re-run every migration
-  // and fail on CREATE TABLE. If the tracking table is missing but the
-  // schema already exists, record the journal as already applied.
-  await reconcileExistingSchema(dir);
+  // and fail on CREATE TABLE. Only when the app schema already exists AND
+  // tracking is absent do we record the journal as already applied; fresh
+  // databases skip straight to runMigrations, which creates the tracking
+  // table and applies the schema normally.
+  if (await needsReconcile()) {
+    await reconcileExistingSchema(dir);
+  }
 
   await runMigrations(db, { migrationsFolder: dir });
 }
 
+/** True when app tables exist but Drizzle's migration tracking does not. */
+async function needsReconcile(): Promise<boolean> {
+  const hasTracking = await db.execute(
+    sql`SELECT to_regclass('drizzle.__drizzle_migrations') IS NOT NULL AS ok`,
+  );
+  if (hasTracking.rows[0]?.ok) return false;
+
+  const hasSchema = await db.execute(
+    sql`SELECT to_regclass('public.account') IS NOT NULL AS ok`,
+  );
+  return Boolean(hasSchema.rows[0]?.ok);
+}
+
 /**
- * If the app tables already exist but Drizzle's migration tracking does not
- * (e.g. the schema was created via `drizzle-kit push`, or by the old bootstrap
- * that skipped migrations), seed the tracking table with every journal entry
- * so the migrator treats the existing schema as applied.
- *
- * Targets drizzle.__drizzle_migrations — the exact table Drizzle's migrator
- * uses (schema "drizzle" is its default) — with its exact DDL, and is
- * idempotent: IF NOT EXISTS / ON CONFLICT make re-runs no-ops.
+ * Records every journal entry in Drizzle's tracking table so the migrator
+ * treats the pre-existing schema as already applied. Only called when
+ * needsReconcile() is true (app tables exist, tracking absent). Targets
+ * drizzle.__drizzle_migrations — the exact table Drizzle's migrator uses
+ * (schema "drizzle" is its default) — with its exact DDL; IF NOT EXISTS /
+ * ON CONFLICT keep concurrent boots safe.
  */
 async function reconcileExistingSchema(migrationsDir: string) {
   const journalPath = join(migrationsDir, "meta", "_journal.json");

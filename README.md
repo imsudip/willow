@@ -134,11 +134,13 @@ allowing `PUT`/`GET`/`HEAD` with the audio content type from your app origin
 
 ```json
 {
-  "cors": [
+  "rules": [
     {
-      "allowedMethods": ["GET", "PUT", "HEAD"],
-      "allowedOrigins": ["https://<your-app>.vercel.app", "http://localhost:5173"],
-      "allowedHeaders": ["Content-Type"],
+      "allowed": {
+        "methods": ["GET", "PUT", "HEAD"],
+        "origins": ["https://<your-app>.vercel.app", "http://localhost:5173"],
+        "headers": ["Content-Type"]
+      },
       "maxAgeSeconds": 3600
     }
   ]
@@ -148,7 +150,7 @@ allowing `PUT`/`GET`/`HEAD` with the audio content type from your app origin
 Apply it with:
 
 ```bash
-npx wrangler r2 bucket cors put willow-audio --file r2-cors.json
+npx wrangler r2 bucket cors set willow-audio --file r2-cors.json
 ```
 
 ### Costs

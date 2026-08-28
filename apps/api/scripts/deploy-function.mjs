@@ -31,15 +31,21 @@ const {
   NEON_BRANCH_ID,
   NEON_FUNCTION_SLUG,
   OPENAI_API_KEY,
+  TRANSCRIPTION_MODEL,
+  CLEANUP_MODEL,
+  REMINDER_CRON,
+  CRON_TIMEZONE,
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY,
   VAPID_SUBJECT,
   CRON_SECRET,
   AUTH_SECRET,
+  PUBLIC_ORIGIN,
   R2_API_TOKEN,
   R2_ACCOUNT_ID,
   R2_ACCESS_KEY_ID,
   R2_SECRET_ACCESS_KEY,
+  R2_BUCKET,
   R2_STORAGE_LIMIT_BYTES = "9900000000",
   MAX_UPLOADS_PER_USER_PER_DAY = "50",
   MAX_AUDIO_UPLOAD_BYTES = "10485760",
@@ -70,7 +76,7 @@ console.log("→ Building function bundle…");
 execSync("npm run build -w @willow/api", { stdio: "inherit", cwd: join(apiDir, "..", "..") });
 execSync("npx esbuild src/function.ts --bundle --platform=node --target=node24 --format=esm "
   + "--banner:js=\"import{createRequire as ___cr}from'module';import{fileURLToPath as ___f}from'url';import{dirname as ___d}from'path';const require=___cr(import.meta.url);const __filename=___f(import.meta.url);const __dirname=___d(__filename);\" "
-  + "--alias:pg-native=/tmp/pg-native-stub.js "
+  + "--alias:pg-native=./scripts/pg-native-stub.js "
   + "--outfile=dist/function.mjs",
   { stdio: "inherit", cwd: apiDir });
 
@@ -84,15 +90,21 @@ execSync("zip -rq ../function.zip index.mjs drizzle", { cwd: fnZipDir });
 console.log("→ Deploying to Neon…");
 const environment = JSON.stringify({
   OPENAI_API_KEY,
+  TRANSCRIPTION_MODEL,
+  CLEANUP_MODEL,
+  REMINDER_CRON,
+  CRON_TIMEZONE,
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY,
   VAPID_SUBJECT,
   CRON_SECRET,
   AUTH_SECRET,
+  PUBLIC_ORIGIN,
   R2_API_TOKEN,
   R2_ACCOUNT_ID,
   R2_ACCESS_KEY_ID,
   R2_SECRET_ACCESS_KEY,
+  R2_BUCKET,
   R2_STORAGE_LIMIT_BYTES,
   MAX_UPLOADS_PER_USER_PER_DAY,
   MAX_AUDIO_UPLOAD_BYTES,

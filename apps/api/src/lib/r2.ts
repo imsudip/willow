@@ -1,6 +1,6 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { and, eq, gte, lt } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { audioUploads } from "../db/schema.js";
 import { env } from "../env.js";
@@ -22,17 +22,17 @@ export function audioKey(userId: string, entryId: string) {
 
 /**
  * 1-hour presigned URL for the browser to PUT the audio blob straight to R2.
- * The signed ContentLength pins the maximum upload size server-side, so a
- * client can't exceed the configured cap even with a valid URL.
+ * ContentLength is signed with the exact byte size the client declared and
+ * the server validated, so a mismatched-size upload is rejected by R2.
  */
-export async function createUploadUrl(userId: string, entryId: string) {
+export async function createUploadUrl(userId: string, entryId: string, byteLength: number) {
   return getSignedUrl(
     r2,
     new PutObjectCommand({
       Bucket: env.R2_BUCKET,
       Key: audioKey(userId, entryId),
       ContentType: "audio/webm",
-      ContentLength: env.MAX_AUDIO_UPLOAD_BYTES,
+      ContentLength: byteLength,
     }),
     { expiresIn: 3600 },
   );
@@ -47,16 +47,20 @@ export async function createDownloadUrl(userId: string, entryId: string) {
   );
 }
 
-/** True if the object exists in R2 (used to confirm a completed upload). */
-export async function audioObjectExists(userId: string, entryId: string): Promise<boolean> {
+/**
+ * The stored object's ContentLength in bytes, or null when the object
+ * doesn't exist. Used by audio-complete to confirm the upload matches the
+ * size that was authorized.
+ */
+export async function audioObjectSize(userId: string, entryId: string): Promise<number | null> {
   try {
-    await r2.send(
+    const head = await r2.send(
       new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: audioKey(userId, entryId) }),
     );
-    return true;
+    return head.ContentLength ?? null;
   } catch (err) {
     // 404/403 from R2 both mean "no object we can read" — treat as absent.
-    return false;
+    return null;
   }
 }
 
@@ -70,10 +74,11 @@ export async function deleteAudio(userId: string, entryId: string) {
  * Current bucket storage in bytes (free-tier gate).
  *
  * Uses the documented account-level metrics endpoint
- * (GET /accounts/{account_id}/r2/metrics). The response nests
- * payloadSize/metadataSize by storage class and state; parse defensively and
- * fall back to a flat shape, summing all payload + metadata bytes.
- * Note: account-level metrics can lag slightly behind live writes.
+ * (GET /accounts/{account_id}/r2/metrics). The documented response nests
+ * payloadSize/metadataSize under storage class (standard / infrequentAccess)
+ * and state (published / uploaded); traverse that hierarchy and fall back to
+ * any flat storage groups if present. Account-level metrics can lag slightly
+ * behind live writes.
  */
 export async function getBucketUsageBytes(): Promise<number> {
   const res = await fetch(
@@ -85,16 +90,29 @@ export async function getBucketUsageBytes(): Promise<number> {
 
   let payloadSize = 0;
   let metadataSize = 0;
-  // Prefer the documented nested shape, then fall back to a flat result.
-  const result = (data as { result?: unknown }).result ?? {};
-  const groups = (result as { storageAdaptiveGroups?: unknown }).storageAdaptiveGroups
-    ?? (result as { storage?: unknown }).storage
-    ?? result;
-  const entriesArr = Array.isArray(groups)
-    ? groups
-    : [groups];
 
-  for (const entry of entriesArr as Record<string, unknown>[]) {
+  const result = (data as { result?: unknown }).result ?? {};
+  const classes: unknown[] = [];
+  // Documented shape: { standard?: {...}, infrequentAccess?: {...} }
+  for (const key of ["standard", "infrequentAccess"]) {
+    const cls = (result as Record<string, unknown>)[key];
+    if (cls && typeof cls === "object") {
+      // Each class nests { published?: {...}, uploaded?: {...} }.
+      const states = (cls as Record<string, unknown>).published
+        ? [cls]
+        : Object.values(cls as Record<string, unknown>);
+      classes.push(...states);
+    }
+  }
+  // Fallback shapes: storageAdaptiveGroups / storage arrays or a flat result.
+  const groups = (result as { storageAdaptiveGroups?: unknown }).storageAdaptiveGroups
+    ?? (result as { storage?: unknown }).storage;
+  if (groups !== undefined) classes.push(...(Array.isArray(groups) ? groups : [groups]));
+  if (classes.length === 0 && Object.keys(result as Record<string, unknown>).length > 0) {
+    classes.push(result);
+  }
+
+  for (const entry of classes as Record<string, unknown>[]) {
     const p = entry.payloadSize ?? entry.payloadBytes;
     const m = entry.metadataSize ?? entry.metadataBytes;
     if (typeof p === "string" || typeof p === "number") payloadSize += Number(p);
@@ -106,19 +124,20 @@ export async function getBucketUsageBytes(): Promise<number> {
 /**
  * Per-user daily upload quota. Atomically counts today's reservations and
  * inserts a new one in a single transaction so concurrent requests can't
- * bypass MAX_UPLOADS_PER_USER_PER_DAY. The count query locks the user's rows
- * (FOR UPDATE) to serialize concurrent mints for the same user.
+ * bypass MAX_UPLOADS_PER_USER_PER_DAY. A transaction-scoped advisory lock
+ * keyed by userId serializes concurrent mints even when the user has no
+ * rows yet (FOR UPDATE on an empty set would lock nothing).
  */
 export async function assertUploadQuota(userId: string): Promise<boolean> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
   return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
     const today = await tx
       .select({ id: audioUploads.id })
       .from(audioUploads)
-      .where(and(eq(audioUploads.userId, userId), gte(audioUploads.createdAt, startOfDay)))
-      .for("update");
+      .where(and(eq(audioUploads.userId, userId), gte(audioUploads.createdAt, startOfDay)));
     if (today.length >= env.MAX_UPLOADS_PER_USER_PER_DAY) return false;
 
     await tx.insert(audioUploads).values({ id: crypto.randomUUID(), userId });
@@ -126,7 +145,18 @@ export async function assertUploadQuota(userId: string): Promise<boolean> {
   });
 }
 
-/** Releases a reserved quota slot (called when minting/upload fails). */
-export async function releaseUploadQuota(userId: string, since: Date) {
-  await db.delete(audioUploads).where(and(eq(audioUploads.userId, userId), lt(audioUploads.createdAt, since)));
+/**
+ * Releases the user's most recent quota reservation (called when minting
+ * fails or the client reports a failed upload). Only the newest slot is
+ * removed so successful uploads' reservations stay counted.
+ */
+export async function releaseUploadQuota(userId: string) {
+  const latest = await db
+    .select({ id: audioUploads.id })
+    .from(audioUploads)
+    .where(eq(audioUploads.userId, userId))
+    .orderBy(audioUploads.createdAt)
+    .limit(1);
+  if (latest.length === 0) return;
+  await db.delete(audioUploads).where(eq(audioUploads.id, latest[0].id));
 }
