@@ -86,6 +86,9 @@ if (missing.length > 0) {
 }
 
 console.log("→ Building function bundle…");
+// @willow/shared must be built first — the API imports its dist, and a fresh
+// checkout (e.g. CI) won't have it yet.
+execSync("npm run build -w @willow/shared", { stdio: "inherit", cwd: join(apiDir, "..", "..") });
 execSync("npm run build -w @willow/api", { stdio: "inherit", cwd: join(apiDir, "..", "..") });
 execSync("npx esbuild src/function.ts --bundle --platform=node --target=node24 --format=esm "
     + "--banner:js=\"import{createRequire as ___cr}from'module';import{fileURLToPath as ___f}from'url';import{dirname as ___d}from'path';const require=___cr(import.meta.url);const __filename=___f(import.meta.url);const __dirname=___d(__filename);\" "
