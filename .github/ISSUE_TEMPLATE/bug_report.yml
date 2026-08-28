@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in as much as
+        you can — it helps us fix it faster. If this is a **security** issue,
+        don't use this form — see [SECURITY.md](../../../SECURITY.md).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Willow is affected?
+      options:
+        - Web app (UI / PWA)
+        - API (auth / entries / sync / transcription)
+        - Sync engine (offline / IndexedDB)
+        - Deployment / CI (Neon / Vercel / R2 / GitHub Actions)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device & browser
+      description: e.g. iPhone 13 / iOS 17 / Safari, or Windows 11 / Chrome 120
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+      placeholder: |
+        Steps to reproduce:
+        1. Go to '...'
+        2. Tap '...'
+        3. See error '...'
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / error messages
+      description: Redact any secrets or personal data. Screenshots help too.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched for an existing issue first
+          required: true
+        - label: I'm on the latest `main` / newest release
+        - label: I redacted any personal or secret data

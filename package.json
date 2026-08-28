@@ -3,6 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-only",
+  "description": "Voice-first journaling PWA — ramble at the end of the day; Willow transcribes, cleans, and stores it as a journal entry.",
+  "author": "Sudip Ghosh <sudipghosh9333@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imsudip/willow.git"
+  },
+  "homepage": "https://willow-alpha-one.vercel.app",
+  "bugs": {
+    "url": "https://github.com/imsudip/willow/issues"
+  },
+  "keywords": [
+    "journal",
+    "journaling",
+    "voice",
+    "transcription",
+    "pwa",
+    "offline-first",
+    "react",
+    "hono"
+  ],
   "type": "module",
   "workspaces": [
     "apps/*",

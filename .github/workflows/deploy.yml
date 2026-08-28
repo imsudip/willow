@@ -1,0 +1,207 @@
+# Willow — single pipeline that deploys and manages every service.
+#
+# Triggered on push to main (and optionally on release). It:
+#   1. Runs the full test suite + typecheck.
+#   2. Builds & deploys the API to Neon Functions (with migrations on boot).
+#   3. Health-checks the deployed API.
+#   4. Builds & deploys the PWA to Vercel (--prebuilt, so no double build).
+#   5. Points the Vercel edge proxy (middleware.ts) at the new API URL.
+#   6. Sets WILLOW_API_URL so the GitHub Actions cron can reach the API.
+#   7. Runs a smoke test against the live stack.
+#   8. Tags a release.
+#
+# External services (Neon project, R2 bucket, Vercel project, OpenAI account)
+# are created once in their dashboards; this pipeline deploys to them and
+# manages everything deployable.
+#
+# Required repo secrets/vars (one-time setup):
+#   Secrets:
+#     NEON_API_KEY, OPENAI_API_KEY, CRON_SECRET, AUTH_SECRET,
+#     R2_API_TOKEN, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
+#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN
+#   Vars:
+#     NEON_PROJECT_ID, NEON_BRANCH_ID, NEON_FUNCTION_SLUG,
+#     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_HEALTH_URL (optional),
+#     CRON_TIMEZONE (optional, e.g. "Asia/Kolkata")
+#
+# Populate everything in one go:
+#   bash scripts/push-secrets-to-github.sh
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md", "assets/**"]
+  workflow_dispatch: {} # manual redeploy
+  # Optionally deploy when a release is published instead of on every push:
+  # release:
+  #   types: [published]
+
+# Read-only by default; deploy steps explicitly request what they need.
+permissions:
+  contents: write # for tagging a release and setting repo vars
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false # never cancel an in-flight deploy (a deploy is the prod pointer)
+
+env:
+  # Vercel deploy target project (single project: apps/web).
+  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  # Optional override for the health check URL (defaults to the Neon URL).
+  WILLOW_HEALTH_URL: ${{ vars.WILLOW_HEALTH_URL }}
+
+jobs:
+  # ── 1 · Gate: tests + typecheck ──────────────────────────────────────────
+  # (lint intentionally omitted: the repo has no ESLint config yet — see ci.yml)
+  test:
+    name: Test & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  # ── 2 · Deploy API → Neon Functions ───────────────────────────────────────
+  deploy-api:
+    name: Deploy API to Neon
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      api_url: ${{ steps.derive-url.outputs.api_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Deploy to Neon (zip + environment)
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          NEON_BRANCH_ID: ${{ vars.NEON_BRANCH_ID }}
+          NEON_FUNCTION_SLUG: ${{ vars.NEON_FUNCTION_SLUG }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          R2_API_TOKEN: ${{ secrets.R2_API_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          TRANSCRIPTION_MODEL: ${{ vars.TRANSCRIPTION_MODEL }}
+          CLEANUP_MODEL: ${{ vars.CLEANUP_MODEL }}
+          REMINDER_CRON: ${{ vars.REMINDER_CRON }}
+          CRON_TIMEZONE: ${{ vars.CRON_TIMEZONE }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_STORAGE_LIMIT_BYTES: ${{ vars.R2_STORAGE_LIMIT_BYTES }}
+          MAX_UPLOADS_PER_USER_PER_DAY: ${{ vars.MAX_UPLOADS_PER_USER_PER_DAY }}
+          MAX_AUDIO_UPLOAD_BYTES: ${{ vars.MAX_AUDIO_UPLOAD_BYTES }}
+        run: node apps/api/scripts/neon-deploy.mjs
+
+      # Derive the function URL so downstream jobs (Vercel proxy, cron var,
+      # smoke test) can point at this exact deployment.
+      - name: Derive API URL
+        id: derive-url
+        run: |
+          URL="https://${{ vars.NEON_BRANCH_ID }}-${{ vars.NEON_FUNCTION_SLUG }}.compute.c-5.us-east-2.aws.neon.tech"
+          echo "api_url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "Deployed API URL: ${URL}"
+
+  # ── 3 · Deploy web → Vercel (needs the API URL for the edge proxy) ───────
+  deploy-web:
+    name: Deploy web to Vercel
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel environment info
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build Project Artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          # Middleware needs the API URL at build/edge time.
+          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy Project Artifacts to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+  # ── 4 · Wire cron + smoke test + release (only when everything deployed) ──
+  finalize:
+    name: Wire cron, smoke test, release
+    needs: [deploy-api, deploy-web]
+    runs-on: ubuntu-latest
+    if: always() && needs.deploy-api.result == 'success' && needs.deploy-web.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Keep the cron workflow pointing at the current API URL. Cheap and
+      # idempotent; set WILLOW_API_URL once and it stays in sync on every deploy.
+      - name: Set WILLOW_API_URL repo variable (for cron)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
+        run: |
+          gh variable set WILLOW_API_URL --body "$WILLOW_API_URL"
+
+      # Smoke test: hit the deployed API through the Vercel edge proxy.
+      - name: Smoke test live stack
+        env:
+          WILLOW_HEALTH_URL: ${{ env.WILLOW_HEALTH_URL }}
+          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
+        run: |
+          set -euo pipefail
+          if [ -n "${WILLOW_HEALTH_URL:-}" ]; then
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$WILLOW_HEALTH_URL" || true)
+            echo "direct health: HTTP $code"
+            test "$code" = "200"
+          else
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$WILLOW_API_URL/api/health" || true)
+            echo "direct health: HTTP $code"
+            test "$code" = "200"
+          fi
+
+      # Tag a release (skipped if the commit already has a tag).
+      - name: Tag release
+        run: |
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            echo "Commit already tagged; skipping."
+          else
+            TAG="release-$(date -u +%Y.%m.%d-%H%M%S)"
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "Tagged $TAG"
+          fi

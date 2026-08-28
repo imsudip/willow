@@ -1,0 +1,34 @@
+# Willow — CI: tests + typecheck on every PR and push.
+#
+# This is the cheap gate. The full deploy pipeline lives in deploy.yml and
+# runs on push to main / release. Keeping them separate means PRs get fast
+# feedback without redeploying prod.
+#
+# Note: `npm run lint` (eslint) is intentionally not gated here — the repo has
+# no ESLint config yet, so it can't pass. Add it back once eslint is wired up.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md", "assets/**"]
+
+# No secrets or deploy steps → lock permissions down completely.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

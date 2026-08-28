@@ -25,13 +25,13 @@ packages/shared Zod schemas + constants shared by web & api
 ```bash
 npm install
 
-# 1. Configure the API env
-cp apps/api/.env.example apps/api/.env
+# 1. Configure the env — ONE file at the repo root for everything
+cp .env.example .env.local
 #    set OPENAI_API_KEY (required for transcription)
 
 # 2. Point the API at a Postgres database
 #    Option A (Neon):  neon link && neon checkout main   # writes .env.local
-#    Option B (local):  export DATABASE_URL=postgres://...  in apps/api/.env
+#    Option B (local):  put DATABASE_URL=postgres://...  in .env.local
 
 # 3. Optional: web-push keys
 npm run vapid -w @willow/api
@@ -42,6 +42,11 @@ npm run dev:web        # web on :5173 (proxies /api → :8777)
 ```
 
 Open http://localhost:5173.
+
+> **The single env file**: `.env.local` at the repo root is read by the API
+> (`apps/api/src/env-load.ts`), the web build (Vite `envDir`), and the deploy
+> tooling. Copy `.env.example` once and you're set — every service's variables
+> are annotated there.
 
 > **R2 in local dev**: the API needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 > `R2_SECRET_ACCESS_KEY`, and `R2_API_TOKEN` to mint audio URLs. If you're
@@ -89,17 +94,24 @@ To add a migration:
 
 ## Deploying (maintainers)
 
-See `ARCHITECTURE.md` §7 for the full deploy runbook. In short:
+See `docs/ci-cd-github-actions.md` for the full pipeline. In short:
 
 ```bash
-# API → Neon Functions
-node apps/api/scripts/deploy-function.mjs   # requires NEON_API_KEY + Neon ids + .env
+# one-time: push .env.local secrets/vars to GitHub
+bash scripts/push-secrets-to-github.sh
+# (VERCEL_TOKEN must exist as a GitHub secret — create it in the Vercel
+#  dashboard at vercel.com/account/tokens, then `gh secret set VERCEL_TOKEN`)
 
-# Frontend → Vercel (set WILLOW_API_URL in the project settings; middleware proxies /api)
-cd apps/web && vercel build --prod --yes && vercel deploy --prebuilt --prod --yes
+# push to main → the Deploy pipeline runs automatically
+git push origin main
 ```
+
+The pipeline (`deploy.yml`) tests, deploys the API to Neon
+(`apps/api/scripts/neon-deploy.mjs`), deploys the web app to Vercel, re-syncs
+`WILLOW_API_URL` for cron, smoke-tests, and tags a release.
 
 ## Reporting issues
 
-Include: what you did, what you expected, what happened, and (if relevant)
-whether it's the web app, the API, or the sync behavior.
+Use the issue templates (`.github/ISSUE_TEMPLATE/`) — include what you did,
+what you expected, what happened, and (if relevant) whether it's the web app,
+the API, or the sync behavior. For **security** issues, see `SECURITY.md`.

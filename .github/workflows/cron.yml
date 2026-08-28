@@ -29,7 +29,7 @@ jobs:
       - name: Trigger reminder
         run: |
           curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/reminder" \
-            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
   digest:
     name: Weekly digest
@@ -40,7 +40,7 @@ jobs:
       - name: Trigger digest
         run: |
           curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/digest" \
-            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
   retention:
     name: Audio retention
@@ -51,4 +51,4 @@ jobs:
       - name: Trigger retention
         run: |
           curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/retention" \
-            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
