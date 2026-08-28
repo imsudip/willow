@@ -5,10 +5,11 @@
 
 ## What this is
 
-**Cloudflare R2** stores the audio recordings. The browser **never sends audio
-through the API** — it uses short-lived presigned URLs to upload/download
-straight to R2, so the function isn't a bandwidth bottleneck and there are
-**zero egress fees**.
+**Cloudflare R2** stores the audio recordings. For **storage**, the browser
+never sends audio through the API — it uses short-lived presigned URLs to
+upload/download straight to R2, so the function isn't a bandwidth bottleneck
+and there are **zero egress fees**. (Transcription is a separate flow: audio
+is sent to the API's `/api/transcribe` endpoint for OpenAI processing.)
 
 - Bucket: `willow-audio`
 - Free tier: 10 GB storage, 1M Class A + 10M Class B ops/mo, no egress

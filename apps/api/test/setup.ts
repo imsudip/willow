@@ -14,11 +14,16 @@
  */
 import { config as loadDotenv } from "dotenv";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Anchor to this file (apps/api/test) → repo root, so it works regardless of
+// the cwd (npm run -w @willow/api runs from apps/api).
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // 1. Load root .env.local if present (harmless if env already set — dotenv
 //    never overrides existing process.env by default).
-const rootEnv = resolve(process.cwd(), ".env.local");
+const rootEnv = resolve(repoRoot, ".env.local");
 if (existsSync(rootEnv)) loadDotenv({ path: rootEnv });
 
 // 2. Fill any still-missing required vars with safe dummy values so the app

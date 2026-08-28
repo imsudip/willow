@@ -25,10 +25,16 @@ Willow uses a **single unified environment file** at the repo root:
 cp .env.example .env.local   # then fill in your values
 ```
 
-`.env.local` is gitignored. It serves **every** service — the API runtime, the
-web build (Vite), Neon Functions, GitHub Actions, and (via the deploy script)
-the values mirrored into Vercel. See [`.env.example`](../.env.example) for the
-annotated list of every variable.
+`.env.local` is gitignored. It serves **most** services — the API runtime, the
+web build (Vite), Neon Functions, and GitHub Actions. See
+[`.env.example`](../.env.example) for the annotated list.
+
+**Exceptions — values NOT read from `.env.local`:**
+- `WILLOW_API_URL` is set in the **Vercel project** (the edge middleware reads
+  it at runtime); the `Deploy` workflow injects it at build time too.
+- `VITE_VAPID_PUBLIC_KEY` is set in the **Vercel project** for production builds.
+- GitHub secrets/vars are mirrored by `scripts/push-secrets-to-github.sh` (the
+  repo's `.env.local` values are copied into GitHub Actions).
 
 ## Deploying
 

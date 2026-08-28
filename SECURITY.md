@@ -9,11 +9,13 @@ document explains how to report security issues and what we support.
 | Version | Supported |
 | --- | --- |
 | `main` (latest) | ✅ |
-| Tagged releases (`release-*`) | ✅ |
+| Latest tagged release (`release-*`) | ✅ |
 | Older releases | ❌ |
 
 We recommend always running the latest `main` (or the newest tagged release).
-Only the current deployment is patched for vulnerabilities.
+Security fixes are applied to **`main` first** and released as the next tagged
+release; older tagged releases are not backported. If you self-host a tagged
+release, upgrade to the latest one to receive fixes.
 
 ## Reporting a Vulnerability
 

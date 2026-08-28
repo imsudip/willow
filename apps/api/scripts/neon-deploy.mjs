@@ -138,7 +138,26 @@ if (!res.ok) {
     process.exit(1);
 }
 console.log(`✓ Deployment ${body.deployment.id} ${body.deployment.status}`);
-const baseUrl = `https://${NEON_BRANCH_ID}-${NEON_FUNCTION_SLUG}.compute.c-5.us-east-2.aws.neon.tech`;
+
+// Derive the invocation URL from Neon function metadata (the cell is assigned
+// by Neon, not hard-coded). If metadata is unavailable, fall back to the known
+// US East (Ohio) pattern so the health check still has a target.
+async function getInvocationUrl() {
+    try {
+        const res = await fetch(
+            `https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/functions/${NEON_FUNCTION_SLUG}`,
+            { headers: { Authorization: `Bearer ${NEON_API_KEY}` } },
+        );
+        if (!res.ok) return null;
+        const meta = await res.json();
+        return meta?.function?.invocation_url || null;
+    } catch {
+        return null;
+    }
+}
+
+const baseUrl = (await getInvocationUrl())?.replace(/\/$/, "")
+    ?? `https://${NEON_BRANCH_ID}-${NEON_FUNCTION_SLUG}.compute.c-5.us-east-2.aws.neon.tech`;
 console.log(`  URL: ${baseUrl}/`);
 
 // Optional post-deploy health check so the pipeline knows the API actually boots.

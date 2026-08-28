@@ -18,7 +18,8 @@
 #   Secrets:
 #     NEON_API_KEY, OPENAI_API_KEY, CRON_SECRET, AUTH_SECRET,
 #     R2_API_TOKEN, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN
+#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN,
+#     GH_VARIABLES_TOKEN (fine-grained PAT with "Repository variables" write)
 #   Vars:
 #     NEON_PROJECT_ID, NEON_BRANCH_ID, NEON_FUNCTION_SLUG,
 #     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_HEALTH_URL (optional),
@@ -74,6 +75,9 @@ jobs:
     name: Deploy API to Neon
     needs: test
     runs-on: ubuntu-latest
+    # workflow_dispatch lets a user pick any branch/tag; only ever deploy main
+    # (push events to main also match this).
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 20
     outputs:
       api_url: ${{ steps.derive-url.outputs.api_url }}
@@ -126,6 +130,8 @@ jobs:
     needs: deploy-api
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      vercel_url: ${{ steps.deploy-vercel.outputs.vercel_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -150,9 +156,13 @@ jobs:
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Project Artifacts to Vercel
+        id: deploy-vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "vercel_url=${DEPLOY_URL}" >> "$GITHUB_OUTPUT"
+          echo "Deployed Vercel URL: ${DEPLOY_URL}"
 
   # ── 4 · Wire cron + smoke test + release (only when everything deployed) ──
   finalize:
@@ -161,7 +171,13 @@ jobs:
     runs-on: ubuntu-latest
     if: always() && needs.deploy-api.result == 'success' && needs.deploy-web.result == 'success'
     steps:
+      # fetch-depth 0 + fetch-tags so `git describe --tags` sees existing tags
+      # (avoids duplicate release tags on retries/redeploys).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -170,27 +186,33 @@ jobs:
 
       # Keep the cron workflow pointing at the current API URL. Cheap and
       # idempotent; set WILLOW_API_URL once and it stays in sync on every deploy.
+      #
+      # Note: the default GITHUB_TOKEN cannot write repo variables (403), so
+      # this uses GH_VARIABLES_TOKEN — a fine-grained PAT with "Repository
+      # variables" write permission (see docs/ci-cd-github-actions.md).
       - name: Set WILLOW_API_URL repo variable (for cron)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN }}
           WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
         run: |
           gh variable set WILLOW_API_URL --body "$WILLOW_API_URL"
 
-      # Smoke test: hit the deployed API through the Vercel edge proxy.
+      # Smoke test: hit the deployed API THROUGH the Vercel edge proxy so the
+      # middleware (apps/web/middleware.ts) is exercised end-to-end. When
+      # WILLOW_HEALTH_URL is configured, check it directly instead.
       - name: Smoke test live stack
         env:
           WILLOW_HEALTH_URL: ${{ env.WILLOW_HEALTH_URL }}
-          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
+          VERCEL_URL: ${{ needs.deploy-web.outputs.vercel_url }}
         run: |
           set -euo pipefail
           if [ -n "${WILLOW_HEALTH_URL:-}" ]; then
             code=$(curl -sS -o /dev/null -w '%{http_code}' "$WILLOW_HEALTH_URL" || true)
-            echo "direct health: HTTP $code"
+            echo "health (direct override): HTTP $code"
             test "$code" = "200"
           else
-            code=$(curl -sS -o /dev/null -w '%{http_code}' "$WILLOW_API_URL/api/health" || true)
-            echo "direct health: HTTP $code"
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$VERCEL_URL/api/health" || true)
+            echo "health (via Vercel proxy): HTTP $code"
             test "$code" = "200"
           fi
 

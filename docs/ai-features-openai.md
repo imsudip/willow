@@ -22,7 +22,7 @@ All values live in the **single root `.env.local`** (template:
 
 | Var | Required | Notes |
 |---|---|---|
-| `OPENAI_API_KEY` | yes (transcription) | Server-side only; never shipped to the client |
+| `OPENAI_API_KEY` | yes (all AI features) | Required for transcription, cleanup, prompts, and digest. Server-side only; never shipped to the client |
 | `TRANSCRIPTION_MODEL` | no | Default `gpt-live-transcribe` |
 | `CLEANUP_MODEL` | no | Default `gpt-4o-mini` |
 
@@ -33,8 +33,8 @@ Get a key at https://platform.openai.com/api-keys.
 OpenAI is the **only variable cost** in Willow — everything else is on free
 tiers with hard gates.
 
-- **Transcription:** ~$0.006/min for `gpt-live-transcribe` → a 5-min daily
-  ramble ≈ **$1/mo**.
+- **Transcription:** ~$0.017/min for `gpt-live-transcribe` → a 5-min daily
+  ramble ≈ **$2.55/mo** before other AI calls.
 - **Cleanup + prompts + digest:** pennies (small token calls, prompts cached
   daily per user).
 
@@ -45,7 +45,7 @@ tiers with hard gates.
   OpenAI error.
 - **Prompts look stale** — prompts are cached per `(user, date)`; they refresh
   daily.
-- **Budget control** — the app never streams raw audio through the API for
-  transcription (audio uploads go to R2), so transcription only runs on the
+- **Budget control** — audio is uploaded to R2 for storage via presigned URLs
+  (never proxied through the API for storage), and transcription runs on the
   compact audio you record. Set a spend limit in the OpenAI dashboard as a
   backstop.

@@ -100,8 +100,11 @@ service (API → Neon, web → Vercel, cron + CI via GitHub Actions) on push to
 
 ```bash
 bash scripts/push-secrets-to-github.sh   # pushes your .env.local values to GitHub
-git push origin main                      # triggers the Deploy pipeline
 ```
+
+Then open a **pull request** from your feature branch (or personal fork) into
+`main` — the `Deploy` pipeline runs when it's merged. **Don't push to `main`
+directly**; use the normal PR flow so CI gates and review apply.
 
 ## Documentation
 
@@ -155,8 +158,8 @@ gh secret set VERCEL_TOKEN    # add it to the repo
 ## Support
 
 Willow is a hobby project running on free tiers (Neon + Vercel + Cloudflare R2
-+ GitHub Actions; OpenAI is the only metered cost at ~$1/mo). If it's useful,
-consider supporting the project:
++ GitHub Actions; OpenAI is the only metered cost, ~$2.55/mo for a daily 5-min
+ramble). If it's useful, consider supporting the project:
 
 - ☕ **[Buy me a chai](https://www.buymeachai.in/sudipghosh9333)** — one-off tip, no subscription
 - ⭐ [Sponsor on GitHub](https://github.com/sponsors/imsudip)

@@ -102,8 +102,8 @@ bash scripts/push-secrets-to-github.sh
 # (VERCEL_TOKEN must exist as a GitHub secret — create it in the Vercel
 #  dashboard at vercel.com/account/tokens, then `gh secret set VERCEL_TOKEN`)
 
-# push to main → the Deploy pipeline runs automatically
-git push origin main
+# merge an approved PR into main → the Deploy pipeline runs automatically
+# (never push to main directly — use the normal PR flow)
 ```
 
 The pipeline (`deploy.yml`) tests, deploys the API to Neon

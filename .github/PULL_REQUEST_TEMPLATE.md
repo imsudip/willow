@@ -18,7 +18,7 @@
 
 ## Checklist
 
-- [ ] I read [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md)
 - [ ] No secrets or personal data in code, logs, or screenshots
 - [ ] Docs updated if behavior changed (`docs/`, README, AGENTS.md, ARCHITECTURE.md)
 - [ ] Migration added (not `drizzle-kit push`) if the schema changed

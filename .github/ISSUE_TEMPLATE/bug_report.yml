@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for taking the time to report a bug! Please fill in as much as
         you can — it helps us fix it faster. If this is a **security** issue,
-        don't use this form — see [SECURITY.md](../../../SECURITY.md).
+        don't use this form — see https://github.com/imsudip/willow/blob/main/SECURITY.md
   - type: dropdown
     id: area
     attributes:
