@@ -1,6 +1,11 @@
 # Willow
 
+[![Live](https://img.shields.io/badge/Live-willow--alpha--one.vercel.app-8B5CF6)](https://willow-alpha-one.vercel.app/)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+
 Voice-first journaling PWA. Ramble at the end of the day; the app transcribes, cleans, and stores it as a journal entry.
+
+**Try it live: [https://willow-alpha-one.vercel.app/](https://willow-alpha-one.vercel.app/)**
 
 - **Architecture** — see [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit (Vercel + Neon + Cloudflare R2 + GitHub Actions, all free-tier)
 - **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, scripts, and DB workflows
