@@ -3,7 +3,6 @@ import { WebSocketServer } from "ws";
 import app from "./app.js";
 import { env } from "./env.js";
 import { closeDb } from "./db/bootstrap.js";
-import { startCron } from "./cron.js";
 
 const wss = new WebSocketServer({ noServer: true });
 
@@ -17,8 +16,6 @@ const server = serve(
     console.log(`Willow API listening on http://localhost:${info.port}`);
   },
 );
-
-startCron();
 
 function shutdown() {
   server.close(() => {

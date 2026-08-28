@@ -1,0 +1,43 @@
+name: Willow scheduled jobs
+
+on:
+  schedule:
+    # Evening reminder — daily at 18:30 local time (Asia/Kolkata here; change
+    # timezone/cron to match where your users are).
+    - cron: "30 18 * * *"
+      timezone: "Asia/Kolkata"
+    # Weekly digest — Sunday 19:00 local.
+    - cron: "0 19 * * 0"
+      timezone: "Asia/Kolkata"
+    # Audio retention prune — nightly 04:30 local.
+    - cron: "30 4 * * *"
+      timezone: "Asia/Kolkata"
+  workflow_dispatch: # allow manual runs for testing
+
+jobs:
+  reminder:
+    name: Evening reminder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder
+        run: |
+          curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/reminder" \
+            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"
+
+  digest:
+    name: Weekly digest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger digest
+        run: |
+          curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/digest" \
+            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"
+
+  retention:
+    name: Audio retention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger retention
+        run: |
+          curl -fsS -X POST "${{ vars.WILLOW_API_URL }}/api/cron/retention" \
+            -H "Authorization: Bearer ${{ secrets.WILLOW_CRON_SECRET }}"

@@ -13,7 +13,7 @@ const trustedOrigins = [
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "pg",
     schema: {
       user: schema.user,
       session: schema.session,
@@ -27,4 +27,11 @@ export const auth = betterAuth({
     enabled: true,
   },
   trustedOrigins,
+  advanced: {
+    // Frontend (Vercel) and API (Neon Functions) are different origins in
+    // production, so the session cookie must work cross-site.
+    crossSubDomain: true,
+    useSecureCookies: true,
+    cookiePrefix: "willow",
+  },
 });

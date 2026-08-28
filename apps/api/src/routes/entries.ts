@@ -3,9 +3,9 @@ import { getSessionUser } from "../lib/auth-helpers.js";
 import { db } from "../db/index.js";
 import { entries } from "../db/schema.js";
 import { eq, and, gt, desc, isNull } from "drizzle-orm";
-import { syncPullSchema, syncPushSchema, MAX_AUDIO_BYTES } from "@willow/shared";
-import { saveAudioFile, readAudioFile } from "../lib/audio-store.js";
-import { Readable } from "node:stream";
+import { syncPullSchema, syncPushSchema } from "@willow/shared";
+import { env } from "../env.js";
+import { createDownloadUrl, deleteAudio, createUploadUrl, getBucketUsageBytes, assertUploadQuota } from "../lib/r2.js";
 
 export const entriesRoutes = new Hono();
 
@@ -130,14 +130,12 @@ entriesRoutes.get("/", async (c) => {
 
 // ---- Audio upload / download ----
 
-entriesRoutes.put("/:id/audio", async (c) => {
+// PUT /:id/audio no longer accepts the blob directly. The client first calls
+// POST /api/entries/:id/audio-url to get a presigned R2 PUT URL (gated by
+// the 9.9GB bucket cap + 50/day/user limit), then uploads straight to R2.
+entriesRoutes.post("/:id/audio-url", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
-
-  const body = await c.req.parseBody();
-  const file = body["file"];
-  if (!file || typeof file === "string") return c.json({ error: "Missing file" }, 400);
-  if (file.size > MAX_AUDIO_BYTES) return c.json({ error: "File too large" }, 413);
 
   const row = await db
     .select()
@@ -146,11 +144,49 @@ entriesRoutes.put("/:id/audio", async (c) => {
     .limit(1);
   if (row.length === 0) return c.json({ error: "Not found" }, 404);
 
-  const audioPath = await saveAudioFile(user.id, row[0].id, file);
-  await db.update(entries).set({ audioPath, audioPresent: true }).where(eq(entries.id, row[0].id));
+  // Free-tier storage gate
+  try {
+    const usage = await getBucketUsageBytes();
+    if (usage >= env.R2_STORAGE_LIMIT_BYTES) {
+      return c.json({ error: "Audio storage is full — no more recordings can be saved right now." }, 507);
+    }
+  } catch (err) {
+    console.error("R2 usage check failed:", err);
+    // Fail closed: don't hand out upload URLs when we can't verify capacity.
+    return c.json({ error: "Storage check unavailable — try again shortly." }, 503);
+  }
+
+  // Per-user daily upload quota
+  const ok = await assertUploadQuota(user.id);
+  if (!ok) return c.json({ error: "Daily recording limit reached (50/day)." }, 429);
+
+  const url = await createUploadUrl(user.id, row[0].id);
+  // Mark the entry as having server-side audio so playback URL minting works.
+  // (The client PUTs the blob to R2 immediately after receiving this URL.)
+  await db
+    .update(entries)
+    .set({ audioPresent: true, audioPath: `r2://${user.id}/${row[0].id}.webm`, updatedAt: new Date() })
+    .where(eq(entries.id, row[0].id));
+  return c.json({ uploadUrl: url });
+});
+
+entriesRoutes.delete("/:id/audio", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+  const row = await db
+    .select()
+    .from(entries)
+    .where(and(eq(entries.id, c.req.param("id")), eq(entries.userId, user.id)))
+    .limit(1);
+  if (row.length === 0) return c.json({ error: "Not found" }, 404);
+
+  await deleteAudio(user.id, row[0].id);
+  await db.update(entries).set({ audioPath: null, audioPresent: false }).where(eq(entries.id, row[0].id));
   return c.json({ ok: true });
 });
 
+// GET /:id/audio now returns a presigned R2 GET URL instead of streaming from disk.
 entriesRoutes.get("/:id/audio", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -160,48 +196,8 @@ entriesRoutes.get("/:id/audio", async (c) => {
     .from(entries)
     .where(and(eq(entries.id, c.req.param("id")), eq(entries.userId, user.id)))
     .limit(1);
-  if (row.length === 0 || !row[0].audioPath) return c.json({ error: "Not found" }, 404);
+  if (row.length === 0 || !row[0].audioPresent) return c.json({ error: "Not found" }, 404);
 
-  const file = readAudioFile(row[0].audioPath);
-  if (!file) return c.json({ error: "Not found" }, 404);
-
-  const total = file.size;
-  const range = c.req.header("range");
-  const baseHeaders = {
-    "Content-Type": "audio/webm",
-    "Accept-Ranges": "bytes",
-    "Cache-Control": "private, max-age=86400",
-  };
-
-  // Range request → 206 Partial Content so the browser can seek + show duration
-  if (range) {
-    const m = /^bytes=(\d*)-(\d*)$/.exec(range);
-    if (m) {
-      let start = m[1] ? Number(m[1]) : 0;
-      let end = m[2] ? Number(m[2]) : total - 1;
-      if (Number.isNaN(start) || Number.isNaN(end)) {
-        return c.json({ error: "Invalid range" }, 416);
-      }
-      if (start > end || start >= total) {
-        return new Response(null, {
-          status: 416,
-          headers: { ...baseHeaders, "Content-Range": `bytes */${total}` },
-        });
-      }
-      end = Math.min(end, total - 1);
-      const chunk = Readable.toWeb(file.stream({ start, end })) as unknown as ReadableStream;
-      return new Response(chunk, {
-        status: 206,
-        headers: {
-          ...baseHeaders,
-          "Content-Length": String(end - start + 1),
-          "Content-Range": `bytes ${start}-${end}/${total}`,
-        },
-      });
-    }
-  }
-
-  return new Response(Readable.toWeb(file.stream()) as unknown as ReadableStream, {
-    headers: { ...baseHeaders, "Content-Length": String(total) },
-  });
+  const url = await createDownloadUrl(user.id, row[0].id);
+  return c.json({ url });
 });

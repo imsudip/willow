@@ -2,10 +2,13 @@
 
 Voice-first journaling PWA. Ramble at the end of the day; the app transcribes, cleans, and stores it as a journal entry.
 
+- **Architecture** — see [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit (Vercel + Neon + Cloudflare R2 + GitHub Actions, all free-tier)
+- **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, scripts, and DB workflows
+
 ## Repo
 
 - `apps/web` — React + Vite PWA (mobile-first, warm "golden hour" design)
-- `apps/api` — Hono API (SQLite, Better Auth, OpenAI transcription + AI features, Web Push)
+- `apps/api` — Hono API (Postgres, Better Auth, OpenAI transcription + AI features, Web Push)
 - `packages/shared` — Zod schemas, constants, shared types
 
 ## Requirements
@@ -13,6 +16,7 @@ Voice-first journaling PWA. Ramble at the end of the day; the app transcribes, c
 - Node.js 22+
 - An [OpenAI API key](https://platform.openai.com/api-keys) with access to `gpt-4o-mini-transcribe` (transcription) and `gpt-4o-mini` (cleanup/prompts/digest)
 - VAPID keys for web push (optional; without them reminders/digests are disabled)
+- A Neon account (Postgres + Functions) and a Cloudflare account (R2) for deployment
 
 ## Run locally (dev)
 
@@ -22,6 +26,7 @@ npm install
 # configure env
 cp apps/api/.env.example apps/api/.env
 # edit apps/api/.env — set OPENAI_API_KEY (required for transcription)
+# and the R2/Neon values below.
 
 # optional: generate web-push keys
 npm run vapid -w @willow/api
@@ -31,65 +36,96 @@ npm run dev            # API on :8777 (hot reload)
 npm run dev:web        # web on :5173 (proxies /api → :8777)
 ```
 
-Open http://localhost:5173 (web) or http://localhost:8777 (API serves the built PWA in prod).
+Open http://localhost:5173 (web) or http://localhost:8777 (API).
 
-## Run in production
+## Deploy (free tier)
+
+The app is split across three free-tier services:
+
+| Piece | Host | Why |
+|---|---|---|
+| Frontend (Vite PWA) | **Vercel** (static) | Free, no cold starts; `/api/*` is proxied to Neon via `vercel.json` |
+| API (Hono) | **Neon Functions** | Long-running Node 24 serverless next to Postgres; `export default app` works directly |
+| Database | **Neon Postgres** | Free tier: 100 CU-hrs, 0.5 GB storage (scale-to-zero after 5 min) |
+| Audio files | **Cloudflare R2** | Free tier: 10 GB, 1M Class A + 10M Class B ops/mo, no egress fees |
+| Scheduled jobs | **GitHub Actions** | Timezone-aware cron; triggers `/api/cron/*` on the function |
+
+### Deploying the API to Neon Functions
 
 ```bash
-npm run build          # shared → dist, web → dist, api → dist
-npm start              # builds then runs node apps/api/dist/index.js on :8777
+# one-time: link the repo to your Neon project (us-east-2 — required for Functions)
+neon link
+
+# build the function bundle (esbuild, everything inlined except native deps)
+npm run build -w @willow/api
+npm run build:function -w @willow/api
+
+# package index.mjs + drizzle/ migrations into a zip (the CLI's --src only ships
+# the bundle, so we use the API for the custom zip)
+mkdir -p apps/api/dist/fnzip
+cp apps/api/dist/function.mjs apps/api/dist/fnzip/index.mjs
+cp -r apps/api/drizzle apps/api/dist/fnzip/drizzle
+(cd apps/api/dist/fnzip && zip -r ../function.zip index.mjs drizzle)
+
+# deploy via the API with env vars as JSON (see scripts/deploy-function.mjs)
 ```
 
-The API serves the built PWA + `/api/*` from one process. Set `DATA_DIR` (default `./data`) to where SQLite and audio live.
+The function runs `migrate()` on boot (idempotent — skips if tables exist).
 
-## Deploy
-
-The whole app is one container: **the API serves the built frontend**, so there's nothing else to host (no CDN needed for MVP — though you can put Cloudflare in front later for caching).
+### Deploying the frontend to Vercel
 
 ```bash
-docker build -t willow .
-docker run -d --name willow \
-  -p 8777:8777 \
-  -v willow-data:/data \
-  -e OPENAI_API_KEY=sk-... \
-  -e VAPID_PUBLIC_KEY=... \
-  -e VAPID_PRIVATE_KEY=... \
-  -e VAPID_SUBJECT=mailto:you@example.com \
-  -e AUTH_SECRET=$(openssl rand -hex 32) \
-  willow
+cd apps/web
+vercel link --yes --project willow
+vercel build --prod --yes   # builds locally (workspace-aware)
+vercel deploy --prebuilt --prod --yes
 ```
 
-That's it — `https://your-domain` serves both the app and API. Mount `-v willow-data:/data` so SQLite + audio survive redeploys.
+`apps/web/vercel.json` rewrites `/api/:path*` → your Neon function URL and serves
+the SPA with an `index.html` fallback.
 
-### Where to host
+### Scheduled jobs (GitHub Actions)
 
-| Option | Notes |
-|---|---|
-| **Railway** | Easiest — point it at the repo, it detects the Dockerfile, add env vars + a volume mount at `/data`. Auto-deploys on push. |
-| **Fly.io** | Great for personal apps — `fly launch`, attach a volume, one small machine. Cheapest for low traffic. |
-| **A $5 VPS (DigitalOcean/Hetzner)** | `docker run` it behind Caddy (auto-HTTPS). Most control, ~$5/mo. |
-| **Render** | Good free tier; Docker support, disk mounts for `/data`. |
+`.github/workflows/cron.yml` runs three jobs (evening reminder, weekly digest,
+audio retention) on a timezone-aware schedule and hits
+`$WILLOW_API_URL/api/cron/{reminder,digest,retention}` with
+`Authorization: Bearer $WILLOW_CRON_SECRET`.
 
-All need: the env vars below + `OPENAI_API_KEY`, and **HTTPS** (required for mic access + PWA install + push).
+Set repo secrets/vars:
+
+```bash
+gh secret set WILLOW_CRON_SECRET --body "$CRON_SECRET"
+gh variable set WILLOW_API_URL --body "https://<branch>-<slug>.compute.<cell>.us-east-2.aws.neon.tech"
+```
 
 ### Environment reference
 
 | Var | Required | Notes |
 |---|---|---|
 | `OPENAI_API_KEY` | yes (transcription) | Server-side only; never shipped to the client |
-| `AUTH_SECRET` | no | Auto-generated on first run if absent; set it in prod so sessions survive restarts |
+| `DATABASE_URL` | yes | Neon pooled URL; injected automatically on Functions, `neon env pull` locally |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes (audio) | R2 S3 API token (Object Read & Write) for presigned URLs |
+| `R2_API_TOKEN` | yes (audio gate) | Cloudflare API token with R2 read, for the free-tier usage check |
+| `CRON_SECRET` | yes (jobs) | Shared secret the GitHub Actions workflow sends to `/api/cron/*` |
+| `AUTH_SECRET` | yes | Better Auth session secret; generate with `openssl rand -hex 32` |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | for push | `npm run vapid -w @willow/api` generates them |
-| `REMINDER_CRON` | no | Default `30 18 * * *` (18:30) |
-| `PUBLIC_ORIGIN` | no | Your deployed origin (e.g. `https://willow.app`); sets auth cookies + trusted origins. Set in prod. |
-| `DATA_DIR` | no | Default `./data` — mount a volume here |
-| `PORT` | no | Default `8777` |
-| `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Defaults `gpt-4o-mini-transcribe` / `gpt-4o-mini` |
+| `PUBLIC_ORIGIN` | in prod | Your deployed origin (e.g. `https://willow.vercel.app`); CORS + trusted origins |
+| `R2_STORAGE_LIMIT_BYTES` | no | Free-tier gate: reject uploads past this (default 9.9 GB) |
+| `MAX_UPLOADS_PER_USER_PER_DAY` | no | Abuse gate: per-user daily upload cap (default 50) |
+| `MIGRATIONS_DIR` | no | Where the bundled `drizzle/` folder lives on the function runtime |
+
+### Audio flow (R2 presigned URLs)
+
+1. Client calls `POST /api/entries/:id/audio-url` (auth-gated, storage + quota checked)
+2. Server mints a 1-hour presigned R2 PUT URL; marks the entry `audioPresent`
+3. Client PUTs the blob straight to R2 (never through the function)
+4. Playback: `GET /api/entries/:id/audio` mints a 1-hour presigned GET URL
 
 ### Costs
 
 - **Transcription:** ~$0.006/min for `gpt-4o-mini-transcribe` — a 5-min daily ramble ≈ **$1/mo**
 - **Cleanup + prompts + digest:** pennies (small token calls, cached daily)
-- **Hosting:** $0–5/mo depending on provider
+- **Hosting:** $0 (Neon free tier + Vercel static + R2 free tier + GitHub Actions free minutes)
 
 ### Push notifications (PWA)
 
@@ -99,5 +135,12 @@ The client subscribes in Settings → Push notifications. For the badge icon, dr
 
 - `npm run dev` — API watch on :8777 (web on :5173 via `npm run dev:web`)
 - `npm run build` / `npm run typecheck` / `npm test` — full repo
-- `npm run start` — production build + serve
+- `npm run build:function -w @willow/api` — esbuild bundle for the Neon Function
 - `npm run vapid -w @willow/api` — generate web-push keys into `.env`
+
+## License
+
+[GNU Affero General Public License v3.0](LICENSE) — if you modify and run this
+software as a network service, you must offer your modified source to your
+users. See the [AGPL FAQ](https://www.gnu.org/licenses/agpl-3.0.html) for
+details.
