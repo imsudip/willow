@@ -27,9 +27,9 @@ const envFile = join(apiDir, ".env");
 
 const {
   NEON_API_KEY,
-  NEON_PROJECT_ID = "orange-sky-20243531",
-  NEON_BRANCH_ID = "br-fancy-fog-aye0zoil",
-  NEON_FUNCTION_SLUG = "willow",
+  NEON_PROJECT_ID,
+  NEON_BRANCH_ID,
+  NEON_FUNCTION_SLUG,
   OPENAI_API_KEY,
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY,
@@ -42,19 +42,28 @@ const {
   R2_SECRET_ACCESS_KEY,
   R2_STORAGE_LIMIT_BYTES = "9900000000",
   MAX_UPLOADS_PER_USER_PER_DAY = "50",
+  MAX_AUDIO_UPLOAD_BYTES = "10485760",
   MIGRATIONS_DIR = "./drizzle",
 } = process.env;
 
-if (!NEON_API_KEY) {
-  console.error("NEON_API_KEY is required. Create one with: neon api-keys create");
+const required = [
+  "NEON_API_KEY",
+  "NEON_PROJECT_ID",
+  "NEON_BRANCH_ID",
+  "NEON_FUNCTION_SLUG",
+  "OPENAI_API_KEY",
+  "CRON_SECRET",
+  "AUTH_SECRET",
+  "R2_API_TOKEN",
+  "R2_ACCOUNT_ID",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+];
+const missing = required.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  console.error(`Missing env var(s): ${missing.join(", ")} (set them in ${envFile} or the shell)`);
+  console.error("Neon ids come from: neon project list / neon branches list / the Functions tab");
   process.exit(1);
-}
-
-for (const k of ["OPENAI_API_KEY", "CRON_SECRET", "AUTH_SECRET", "R2_API_TOKEN", "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]) {
-  if (!process.env[k]) {
-    console.error(`Missing env var ${k} (set it in ${envFile})`);
-    process.exit(1);
-  }
 }
 
 console.log("→ Building function bundle…");
@@ -86,6 +95,7 @@ const environment = JSON.stringify({
   R2_SECRET_ACCESS_KEY,
   R2_STORAGE_LIMIT_BYTES,
   MAX_UPLOADS_PER_USER_PER_DAY,
+  MAX_AUDIO_UPLOAD_BYTES,
   MIGRATIONS_DIR,
 });
 

@@ -81,8 +81,10 @@ vercel build --prod --yes   # builds locally (workspace-aware)
 vercel deploy --prebuilt --prod --yes
 ```
 
-`apps/web/vercel.json` rewrites `/api/:path*` → your Neon function URL and serves
-the SPA with an `index.html` fallback.
+`apps/web/vercel.json` rewrites non-API routes to the SPA (`index.html`), and
+`apps/web/middleware.ts` proxies `/api/*` to your Neon function URL at the
+edge (set the `WILLOW_API_URL` env var in the Vercel project — vercel.json
+can't read env vars, which is why the proxy lives in middleware).
 
 ### Scheduled jobs (GitHub Actions)
 
@@ -106,26 +108,55 @@ gh variable set WILLOW_API_URL --body "https://<branch>-<slug>.compute.<cell>.us
 | `DATABASE_URL` | yes | Neon pooled URL; injected automatically on Functions, `neon env pull` locally |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes (audio) | R2 S3 API token (Object Read & Write) for presigned URLs |
 | `R2_API_TOKEN` | yes (audio gate) | Cloudflare API token with R2 read, for the free-tier usage check |
-| `CRON_SECRET` | yes (jobs) | Shared secret the GitHub Actions workflow sends to `/api/cron/*` |
-| `AUTH_SECRET` | yes | Better Auth session secret; generate with `openssl rand -hex 32` |
+| `CRON_SECRET` | yes (jobs) | Shared secret the GitHub Actions workflow sends to `/api/cron/*`; no default — set it |
+| `AUTH_SECRET` | yes | Better Auth session secret; no default — set it (`openssl rand -hex 32`) |
+| `CRON_TIMEZONE` | no | IANA zone for the reminder's "today" boundary (default `Asia/Kolkata`; must match the workflow schedule) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | for push | `npm run vapid -w @willow/api` generates them |
 | `PUBLIC_ORIGIN` | in prod | Your deployed origin (e.g. `https://willow.vercel.app`); CORS + trusted origins |
 | `R2_STORAGE_LIMIT_BYTES` | no | Free-tier gate: reject uploads past this (default 9.9 GB) |
 | `MAX_UPLOADS_PER_USER_PER_DAY` | no | Abuse gate: per-user daily upload cap (default 50) |
+| `MAX_AUDIO_UPLOAD_BYTES` | no | Per-recording cap enforced via presigned PUT Content-Length (default 10 MB) |
 | `MIGRATIONS_DIR` | no | Where the bundled `drizzle/` folder lives on the function runtime |
 
 ### Audio flow (R2 presigned URLs)
 
-1. Client calls `POST /api/entries/:id/audio-url` (auth-gated, storage + quota checked)
-2. Server mints a 1-hour presigned R2 PUT URL; marks the entry `audioPresent`
+1. Client calls `POST /api/entries/:id/audio-url` (auth-gated, storage + quota checked) — the entry is **not** marked as having audio yet
+2. Server mints a 1-hour presigned R2 PUT URL (Content-Length-capped via `MAX_AUDIO_UPLOAD_BYTES`)
 3. Client PUTs the blob straight to R2 (never through the function)
-4. Playback: `GET /api/entries/:id/audio` mints a 1-hour presigned GET URL
+4. Client calls `POST /api/entries/:id/audio-complete`; the server verifies the object exists (HEAD), then atomically marks the entry `audioPresent`
+5. Playback: `GET /api/entries/:id/audio` mints a 1-hour presigned GET URL
+
+### R2 CORS (required once)
+
+Presigned uploads come from the browser, so the bucket needs a CORS policy
+allowing `PUT`/`GET`/`HEAD` with the audio content type from your app origin
+(and `http://localhost:5173` for dev). Save this as `r2-cors.json`:
+
+```json
+{
+  "cors": [
+    {
+      "allowedMethods": ["GET", "PUT", "HEAD"],
+      "allowedOrigins": ["https://<your-app>.vercel.app", "http://localhost:5173"],
+      "allowedHeaders": ["Content-Type"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
+```
+
+Apply it with:
+
+```bash
+npx wrangler r2 bucket cors put willow-audio --file r2-cors.json
+```
 
 ### Costs
 
 - **Transcription:** ~$0.006/min for `gpt-4o-mini-transcribe` — a 5-min daily ramble ≈ **$1/mo**
 - **Cleanup + prompts + digest:** pennies (small token calls, cached daily)
 - **Hosting:** $0 (Neon free tier + Vercel static + R2 free tier + GitHub Actions free minutes)
+- **OpenAI:** metered pay-per-token (see above)
 
 ### Push notifications (PWA)
 

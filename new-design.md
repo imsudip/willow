@@ -17,31 +17,31 @@ This UI language is basically **calm therapy app + premium journal + soft spirit
 
 ### Primary Accent
 
-| Usage            | Color     | Hex |
-| ---------------- | --------- | --- |
-| Primary Lavender | `#C7A9FF` |     |
-| Hover Lavender   | `#B892FF` |     |
-| Light Lavender   | `#E8DBFF` |     |
-| Lavender Glow    | `#F2EBFF` |     |
+| Usage            | Color     |
+| ---------------- | --------- |
+| Primary Lavender | `#C7A9FF` |
+| Hover Lavender   | `#B892FF` |
+| Light Lavender   | `#E8DBFF` |
+| Lavender Glow    | `#F2EBFF` |
 
 ### Text
 
-| Usage          | Color     | Hex |
-| -------------- | --------- | --- |
-| Primary Text   | `#1E1A17` |     |
-| Secondary Text | `#6E665F` |     |
-| Muted Text     | `#9B948D` |     |
-| Disabled Text  | `#C4BCB3` |     |
+| Usage          | Color     |
+| -------------- | --------- |
+| Primary Text   | `#1E1A17` |
+| Secondary Text | `#6E665F` |
+| Muted Text     | `#9B948D` |
+| Disabled Text  | `#C4BCB3` |
 
 ### Supporting Colors
 
-| Usage       | Color     | Hex |
-| ----------- | --------- | --- |
-| Success     | `#7DBE8A` |     |
-| Warning     | `#E4C27A` |     |
-| Soft Pink   | `#F6D9E9` |     |
-| Soft Purple | `#DDD0FF` |     |
-| Border      | `#E5DDD5` |     |
+| Usage       | Color     |
+| ----------- | --------- |
+| Success     | `#7DBE8A` |
+| Warning     | `#E4C27A` |
+| Soft Pink   | `#F6D9E9` |
+| Soft Purple | `#DDD0FF` |
+| Border      | `#E5DDD5` |
 
 ---
 
@@ -58,7 +58,7 @@ This UI language is basically **calm therapy app + premium journal + soft spirit
 Most cards use:
 
 ```css
-border-radius: 24px;
+border-radius: 1rem; /* 16px — matches design.md and the .card component */
 ```
 
 The reflection button:
@@ -107,7 +107,7 @@ Avoid modern SaaS shadows.
 ```css
 background: #FBF8F4;
 border: 1px solid #E5DDD5;
-border-radius: 24px;
+border-radius: 1rem; /* 16px */
 padding: 20px;
 ```
 
