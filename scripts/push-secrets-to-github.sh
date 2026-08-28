@@ -56,7 +56,8 @@ set_var_from() { # $1 = key, $2 = value (may be literal)
   echo "  · ${1}: set"
 }
 # Vercel vars come from .env.local too (VERCEL_ORG_ID / VERCEL_PROJECT_ID);
-# VERCEL_TOKEN is a CI-only secret you create once with `vercel tokens create`.
+# VERCEL_TOKEN is a CI-only secret you create once (Vercel Tokens page or
+# `vercel tokens add "<name>"`).
 for k in VERCEL_ORG_ID VERCEL_PROJECT_ID; do
   set_var "$k"
 done

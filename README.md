@@ -149,8 +149,8 @@ function logs for the OpenAI error.
 **How to fix**
 
 ```bash
-vercel tokens create          # create a CI token
-gh secret set VERCEL_TOKEN    # add it to the repo
+vercel tokens add "ci"      # create a CI token (or use the Vercel Tokens page)
+gh secret set VERCEL_TOKEN   # add it to the repo
 ```
 
 **Still stuck?** — Open a [discussion](https://github.com/imsudip/willow/discussions) with logs from the failing workflow run.

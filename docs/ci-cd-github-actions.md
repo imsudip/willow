@@ -70,11 +70,12 @@ bash scripts/push-secrets-to-github.sh
 ```
 
 - **Secrets** (masked): `NEON_API_KEY`, `OPENAI_API_KEY`, `AUTH_SECRET`,
-  `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN` (create with
-  `vercel tokens create`, then `gh secret set VERCEL_TOKEN`) and
-  `GH_VARIABLES_TOKEN` (fine-grained PAT with **"Repository variables"** write
-  permission — the deploy pipeline uses it to re-sync `WILLOW_API_URL`; the
-  default `GITHUB_TOKEN` can't write repo variables).
+  `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN` (create via the
+  [Vercel Tokens page](https://vercel.com/account/tokens) or
+  `vercel tokens add "<name>"`, then `gh secret set VERCEL_TOKEN`) and
+  `GH_VARIABLES_TOKEN` (fine-grained PAT with the **"Variables"** repository
+  permission set to **write** — the deploy pipeline uses it to re-sync
+  `WILLOW_API_URL`; the default `GITHUB_TOKEN` can't write repo variables).
 - **Variables** (non-secret): `NEON_PROJECT_ID`, `NEON_BRANCH_ID`,
   `NEON_FUNCTION_SLUG`, `R2_BUCKET`, tuning limits, `PUBLIC_ORIGIN`,
   `CRON_TIMEZONE`, `VAPID_SUBJECT`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
@@ -85,7 +86,8 @@ bash scripts/push-secrets-to-github.sh
 - **Deploy failed at `deploy-api`** — check the Neon function deploy API
   response (logs in the Actions step); confirm `NEON_*` vars are set.
 - **Deploy failed at `deploy-web`** — `VERCEL_TOKEN` is the usual culprit;
-  regenerate with `vercel tokens create` and `gh secret set VERCEL_TOKEN`.
+  regenerate via the [Vercel Tokens page](https://vercel.com/account/tokens)
+  (or `vercel tokens add "<name>"`) and `gh secret set VERCEL_TOKEN`.
 - **Cron not firing** — GitHub Actions skips scheduled runs on repos with no
   activity for 60 days; push a commit or run `workflow_dispatch`.
 - **Manual runs** — every workflow supports `workflow_dispatch` from the
