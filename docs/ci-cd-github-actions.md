@@ -72,10 +72,7 @@ bash scripts/push-secrets-to-github.sh
 - **Secrets** (masked): `NEON_API_KEY`, `OPENAI_API_KEY`, `AUTH_SECRET`,
   `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN` (create via the
   [Vercel Tokens page](https://vercel.com/account/tokens) or
-  `vercel tokens add "<name>"`, then `gh secret set VERCEL_TOKEN`) and
-  `GH_VARIABLES_TOKEN` (fine-grained PAT with the **"Variables"** repository
-  permission set to **write** — the deploy pipeline uses it to re-sync
-  `WILLOW_API_URL`; the default `GITHUB_TOKEN` can't write repo variables).
+  `vercel tokens add "<name>"`, then `gh secret set VERCEL_TOKEN`).
 - **Variables** (non-secret): `NEON_PROJECT_ID`, `NEON_BRANCH_ID`,
   `NEON_FUNCTION_SLUG`, `R2_BUCKET`, tuning limits, `PUBLIC_ORIGIN`,
   `CRON_TIMEZONE`, `VAPID_SUBJECT`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,

@@ -18,12 +18,11 @@
 #   Secrets:
 #     NEON_API_KEY, OPENAI_API_KEY, CRON_SECRET, AUTH_SECRET,
 #     R2_API_TOKEN, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN,
-#     GH_VARIABLES_TOKEN (fine-grained PAT, "Variables" repo permission: write)
+#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN
 #   Vars:
 #     NEON_PROJECT_ID, NEON_BRANCH_ID, NEON_FUNCTION_SLUG,
-#     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_HEALTH_URL (optional),
-#     CRON_TIMEZONE (optional, e.g. "Asia/Kolkata")
+#     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_API_URL (set once for cron),
+#     WILLOW_HEALTH_URL (optional), CRON_TIMEZONE (optional, e.g. "Asia/Kolkata")
 #
 # Populate everything in one go:
 #   bash scripts/push-secrets-to-github.sh
@@ -201,9 +200,12 @@ jobs:
           echo "vercel_url=${DEPLOY_URL}" >> "$GITHUB_OUTPUT"
           echo "Deployed Vercel URL: ${DEPLOY_URL}"
 
-  # ── 4 · Wire cron + smoke test + release (only when everything deployed) ──
+  # ── 4 · Smoke test + release (only when everything deployed) ─────────────
+  # (The WILLOW_API_URL repo variable for cron is set ONCE — the Neon function
+  # URL is stable across deploys — so we don't re-sync it here; that avoids a
+  # fragile fine-grained-PAT dependency in the pipeline.)
   finalize:
-    name: Wire cron, smoke test, release
+    name: Smoke test & release
     needs: [deploy-api, deploy-web]
     runs-on: ubuntu-latest
     if: always() && needs.deploy-api.result == 'success' && needs.deploy-web.result == 'success'
@@ -220,19 +222,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-
-      # Keep the cron workflow pointing at the current API URL. Cheap and
-      # idempotent; set WILLOW_API_URL once and it stays in sync on every deploy.
-      #
-      # Note: the default GITHUB_TOKEN cannot write repo variables (403), so
-      # this uses GH_VARIABLES_TOKEN — a fine-grained PAT with the "Variables"
-      # repository permission set to write (see docs/ci-cd-github-actions.md).
-      - name: Set WILLOW_API_URL repo variable (for cron)
-        env:
-          GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN }}
-          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
-        run: |
-          gh variable set WILLOW_API_URL --body "$WILLOW_API_URL"
 
       # Smoke test: hit the deployed API THROUGH the Vercel edge proxy so the
       # middleware (apps/web/middleware.ts) is exercised end-to-end. When

@@ -63,6 +63,6 @@ for k in VERCEL_ORG_ID VERCEL_PROJECT_ID; do
 done
 
 echo "✓ Done. Verify with: gh secret list && gh variable list"
-echo "  (Remember: VERCEL_TOKEN and GH_VARIABLES_TOKEN are CI-only secrets —"
+echo "  (Remember: VERCEL_TOKEN is a CI-only secret — create it via the Vercel"
 echo "   create them via the Vercel dashboard / GitHub fine-grained PAT, then"
 echo "   'gh secret set <NAME>'.)"

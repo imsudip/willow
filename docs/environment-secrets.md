@@ -24,8 +24,7 @@
 | `NEON_PROJECT_ID` / `NEON_BRANCH_ID` / `NEON_FUNCTION_SLUG` | Neon | Neon Console (or `neon project list` / `neon branch list` / `neon functions list`) | Non-secret |
 | `NEON_API_KEY` | Neon | Console → **Account settings** → **API keys** → **Create new API key** | Secret |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Vercel | Vercel project **Settings** → ID fields | Non-secret |
-| `VERCEL_TOKEN` | Vercel | [vercel.com/account/tokens](https://vercel.com/account/tokens) → **Create Token** | Secret (CI-only) |
-| `GH_VARIABLES_TOKEN` | GitHub | [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new) → fine-grained PAT, "Variables" write | Secret (CI-only) |
+| `VERCEL_TOKEN` | Vercel | [vercel.com/account/tokens](https://vercel.com/account/tokens) → **Create Token** (team-scoped) | Secret (CI-only) |
 | `WILLOW_API_URL` | Neon/Vercel | The Neon function URL — set in the **Vercel project**, not `.env.local` | Non-secret |
 | `VITE_VAPID_PUBLIC_KEY` | Vercel | Copy of `VAPID_PUBLIC_KEY` — set in the **Vercel project** for prod builds | Non-secret |
 
@@ -161,24 +160,6 @@ reminders/digests are disabled.
 These are **CI-only secrets** — not in `.env.local` (except the ones the push
 script copies).
 
-### `GH_VARIABLES_TOKEN`
-
-**What it's for:** the deploy pipeline re-syncs the `WILLOW_API_URL` repo
-variable. The default `GITHUB_TOKEN` can't write repo variables (403), so it
-uses this fine-grained PAT.
-
-**Where (UI):** [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
-
-1. **Resource owner:** your GitHub user.
-2. **Repository access:** Only select repositories → `willow`.
-3. **Permissions:** Repository permissions → **Variables** → **Read and write**.
-4. **Generate token** → copy the `github_pat_...` value (shown once).
-
-Then store it:
-```bash
-gh secret set GH_VARIABLES_TOKEN
-```
-
 ---
 
 ## Vercel (frontend)
@@ -259,5 +240,5 @@ Actions as **Secrets** or **Variables**:
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Secret | same |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | **Variable** | same |
 
-**Not set by the script (create once yourself):** `VERCEL_TOKEN` and
-`GH_VARIABLES_TOKEN` (see above).
+**Not set by the script (create once yourself):** `VERCEL_TOKEN` (team-scoped —
+see above).
