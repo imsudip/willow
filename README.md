@@ -108,15 +108,18 @@ directly**; use the normal PR flow so CI gates and review apply.
 
 ## Documentation
 
-Guides and per-service wikis live in the repository:
+Guides and per-service docs live in the **[GitHub Wiki](https://github.com/imsudip/willow/wiki)**:
 
-- **[docs/README.md](docs/README.md)** — index of the per-service wikis
-- **[Secrets & env](docs/environment-secrets.md)** — where to get every token/secret
-- **[API + Database (Neon)](docs/api-database-neon.md)** — Hono API, migrations, deploy
-- **[Frontend (Vercel)](docs/frontend-vercel.md)** — static PWA, proxy, rollback
-- **[Audio storage (R2)](docs/audio-storage-r2.md)** — presigned URLs, guardrails
-- **[CI/CD & cron (GitHub Actions)](docs/ci-cd-github-actions.md)** — pipelines, secrets
-- **[AI features (OpenAI)](docs/ai-features-openai.md)** — models, cost
+- **[Home](https://github.com/imsudip/willow/wiki)** — index & quick start
+- **[Secrets & Environment](https://github.com/imsudip/willow/wiki/Secrets-and-Environment)** — where to get every token/secret
+- **[API + Database (Neon)](https://github.com/imsudip/willow/wiki/API-Database-Neon)** — Hono API, migrations, deploy
+- **[Frontend (Vercel)](https://github.com/imsudip/willow/wiki/Frontend-Vercel)** — static PWA, proxy, rollback
+- **[Audio storage (R2)](https://github.com/imsudip/willow/wiki/Audio-Storage-R2)** — presigned URLs, guardrails
+- **[CI/CD & cron (GitHub Actions)](https://github.com/imsudip/willow/wiki/CI-CD-GitHub-Actions)** — pipelines, secrets
+- **[AI features (OpenAI)](https://github.com/imsudip/willow/wiki/AI-Features-OpenAI)** — models, cost
+
+Repo docs:
+
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — deep dive: data model, sync, auth, cost ceiling
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — setup, scripts, DB workflows
 

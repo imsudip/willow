@@ -120,14 +120,40 @@ dashboard (see `docs/frontend-vercel.md`).
   getting started, docs, troubleshooting). Keep it high-level.
 - **ARCHITECTURE.md** — the deep dive. Update it when data flow / deployment
   changes meaningfully.
-- **docs/** — per-service wikis. Each service page: what it is, how it's
-  hosted, config, deploy, manage, troubleshoot.
+- **docs/** — the **source of truth** for per-service docs. Each service page:
+  what it is, how it's hosted, config, deploy, manage, troubleshoot.
+- **GitHub Wiki** — a **public mirror** of `docs/` (see
+  `scripts/sync-wiki.sh`). The README links to the wiki, not to `docs/*.md`.
 - **CONTRIBUTING.md** — first-run + DB workflow guidance.
 - **Workflow conventions**:
   - Branch per feature: `feature/<short-name>`.
   - PRs run `ci.yml` (typecheck + tests). `deploy.yml` runs on push to `main`.
   - Keep deploy concerns in `.github/workflows/deploy.yml`; add service-level
     docs rather than bloating the README.
+
+### Keeping everything in sync (IMPORTANT)
+
+When you make **any** change, update **all** the places it touches. Ask
+yourself, for each file below, "does this change?":
+
+| Change type | `docs/*.md` | Wiki | `README.md` | `.env.example` | `AGENTS.md` / `ARCHITECTURE.md` |
+| --- | --- | --- | --- | --- | --- |
+| New/removed env var | ✅ (env page) | ✅ | — | ✅ | ✅ if it's architecture-relevant |
+| New API route / service | ✅ (service page) | ✅ | — | — | ✅ if data flow changes |
+| New feature / screen | — | ✅ | ✅ (features/screenshots) | — | — |
+| Deploy/CI change | ✅ (CI page) | ✅ | — | — | ✅ |
+| Config default change | ✅ | ✅ | — | ✅ | — |
+
+**Process:**
+1. Edit the `docs/*.md` source files first (they're the canonical copy).
+2. Re-mirror the wiki: `bash scripts/sync-wiki.sh` (copies `docs/` → wiki repo,
+   rewrites links, pushes). 
+3. Update `README.md` / `.env.example` / `ARCHITECTURE.md` if the row says so.
+4. If you're a contributor without wiki push access, note in the PR description:
+   `[ ] wiki re-mirrored (or needs re-mirror after merge)`.
+
+> The wiki is a **copy**, not the source. Never edit the wiki repo directly for
+> content — edit `docs/` and re-mirror.
 
 ## CI/CD
 
