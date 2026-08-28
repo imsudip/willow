@@ -224,12 +224,14 @@ jobs:
       - run: npm ci
 
       # Smoke test: hit the deployed API THROUGH the Vercel edge proxy so the
-      # middleware (apps/web/middleware.ts) is exercised end-to-end. When
-      # WILLOW_HEALTH_URL is configured, check it directly instead.
+      # middleware (apps/web/middleware.ts) is exercised end-to-end. Use the
+      # stable PRODUCTION alias (the deployment-specific URL from `vercel
+      # deploy` isn't promoted/propagated to the edge immediately, so it can
+      # 302/404). When WILLOW_HEALTH_URL is configured, check it directly.
       - name: Smoke test live stack
         env:
           WILLOW_HEALTH_URL: ${{ env.WILLOW_HEALTH_URL }}
-          VERCEL_URL: ${{ needs.deploy-web.outputs.vercel_url }}
+          WILLOW_PRODUCTION_URL: ${{ vars.WILLOW_PRODUCTION_URL }}
         run: |
           set -euo pipefail
           if [ -n "${WILLOW_HEALTH_URL:-}" ]; then
@@ -237,8 +239,9 @@ jobs:
             echo "health (direct override): HTTP $code"
             test "$code" = "200"
           else
-            code=$(curl -sS -o /dev/null -w '%{http_code}' "$VERCEL_URL/api/health" || true)
-            echo "health (via Vercel proxy): HTTP $code"
+            PROD="${WILLOW_PRODUCTION_URL:-https://willow-alpha-one.vercel.app}"
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$PROD/api/health" || true)
+            echo "health (via Vercel proxy on $PROD): HTTP $code"
             test "$code" = "200"
           fi
 
