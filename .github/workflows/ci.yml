@@ -23,6 +23,24 @@ jobs:
   test:
     name: Test & typecheck
     runs-on: ubuntu-latest
+    # Postgres for the API smoke tests (they boot the real app, which runs
+    # migrate() at import time). Ephemeral per-job — free and fork-friendly.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: willow
+          POSTGRES_PASSWORD: willow
+          POSTGRES_DB: willow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U willow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://willow:willow@localhost:5432/willow_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
