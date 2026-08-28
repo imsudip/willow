@@ -15,6 +15,11 @@ build/
 # data
 data/
 
+# vercel + neon local state
+.vercel/
+.neon/
+.neon
+
 # misc
 *.log
 .DS_Store

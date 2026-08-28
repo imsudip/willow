@@ -22,7 +22,7 @@ describe("API smoke", () => {
     expect(res.status).toBe(200);
     const setCookie = res.headers.get("set-cookie");
     if (setCookie) cookies = setCookie.split(";")[0];
-    expect(cookies).toContain("better-auth");
+    expect(cookies).toContain("willow.session_token");
   });
 
   it("returns fallback prompts with no entries", async () => {

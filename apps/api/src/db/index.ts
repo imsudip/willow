@@ -1,17 +1,15 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { env } from "../env.js";
 import * as schema from "./schema.js";
 
-const dataDir = resolve(process.cwd(), env.DATA_DIR);
-mkdirSync(dataDir, { recursive: true });
+// Pooled connection (DATABASE_URL is injected by Neon on the function runtime;
+// locally it comes from .env.local via `neon env pull` / dotenv).
+export const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  max: 5,
+});
 
-export const sqlite = new Database(resolve(dataDir, "willow.db"));
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(pool, { schema });
 
 export { schema };

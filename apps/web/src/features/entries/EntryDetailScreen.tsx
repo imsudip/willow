@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Share2 } from "lucide-react";
 import { useEntry } from "../../lib/hooks";
 import { db, deleteAudio, getAudio } from "../../lib/db";
+import { client } from "../../lib/api";
 import { TextAnimate } from "../../components/ui/text-animate";
 import { AudioPlayer } from "../../components/ui/audio-player";
 import {
@@ -28,19 +29,24 @@ export function EntryDetailScreen() {
   useEffect(() => {
     if (!entry?.audioPresent || !entry.id) return;
     let url: string | null = null;
-    void getAudio(entry.id).then((blob) => {
+    void getAudio(entry.id).then(async (blob) => {
       if (blob) {
         url = URL.createObjectURL(blob);
         setAudioUrl(url);
-      } else if (entry.serverAudioUrl) {
-        url = entry.serverAudioUrl;
-        setAudioUrl(url);
+      } else {
+        // No local copy — mint a short-lived presigned URL from the API.
+        try {
+          const { url: remoteUrl } = await client.getAudioUrl(entry.id);
+          setAudioUrl(remoteUrl);
+        } catch {
+          /* audio unavailable */
+        }
       }
     });
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [entry?.id, entry?.audioPresent, entry?.serverAudioUrl]);
+  }, [entry?.id, entry?.audioPresent]);
 
   if (!entry) {
     return (
