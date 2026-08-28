@@ -161,24 +161,28 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      - name: Pull Vercel environment info
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      # NOTE: no `vercel pull` step — it fails with a project-scoped token
+      # (vercel/vercel#17506) and isn't needed here: the CLI reads
+      # VERCEL_ORG_ID / VERCEL_PROJECT_ID / VERCEL_TOKEN from the env and we
+      # inject WILLOW_API_URL ourselves at build time.
 
       - name: Build Project Artifacts
         env:
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           # Middleware needs the API URL at build/edge time.
           WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        run: vercel build --prod
 
       - name: Deploy Project Artifacts to Vercel
         id: deploy-vercel
         env:
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod)
           echo "vercel_url=${DEPLOY_URL}" >> "$GITHUB_OUTPUT"
           echo "Deployed Vercel URL: ${DEPLOY_URL}"
 
