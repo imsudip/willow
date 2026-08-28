@@ -20,6 +20,9 @@ data/
 .neon/
 .neon
 
+# agent/tool local state
+.commandcode/
+
 # misc
 *.log
 .DS_Store
