@@ -16,6 +16,7 @@ it is, how it's hosted, how it's configured, and how to deploy/manage it.
 | Audio storage | [audio-storage-r2.md](./audio-storage-r2.md) | Cloudflare R2 |
 | CI/CD + scheduled jobs | [ci-cd-github-actions.md](./ci-cd-github-actions.md) | GitHub Actions |
 | AI features | [ai-features-openai.md](./ai-features-openai.md) | OpenAI |
+| **Secrets & env** | **[environment-secrets.md](./environment-secrets.md)** | Where to get every token/secret |
 
 ## Environment
 

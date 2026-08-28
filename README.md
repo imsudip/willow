@@ -111,6 +111,7 @@ directly**; use the normal PR flow so CI gates and review apply.
 Guides and per-service wikis live in the repository:
 
 - **[docs/README.md](docs/README.md)** — index of the per-service wikis
+- **[Secrets & env](docs/environment-secrets.md)** — where to get every token/secret
 - **[API + Database (Neon)](docs/api-database-neon.md)** — Hono API, migrations, deploy
 - **[Frontend (Vercel)](docs/frontend-vercel.md)** — static PWA, proxy, rollback
 - **[Audio storage (R2)](docs/audio-storage-r2.md)** — presigned URLs, guardrails
