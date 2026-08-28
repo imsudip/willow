@@ -15,6 +15,14 @@ build/
 # data
 data/
 
+# vercel + neon local state
+.vercel/
+.neon/
+.neon
+
+# agent/tool local state
+.commandcode/
+
 # misc
 *.log
 .DS_Store

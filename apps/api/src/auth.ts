@@ -13,7 +13,7 @@ const trustedOrigins = [
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "pg",
     schema: {
       user: schema.user,
       session: schema.session,
@@ -27,4 +27,15 @@ export const auth = betterAuth({
     enabled: true,
   },
   trustedOrigins,
+  advanced: {
+    // The browser talks to the API through the Vercel /api rewrite, which is
+    // same-origin, so cross-site cookies are NOT needed. crossSubDomainCookies
+    // is the supported option (crossSubDomain does not exist in better-auth)
+    // and is intentionally left disabled.
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+    useSecureCookies: true,
+    cookiePrefix: "willow",
+  },
 });

@@ -7,6 +7,8 @@ import {
 } from "react";
 import { createAuthClient } from "better-auth/react";
 
+// Same-origin by design: the Vercel /api rewrite (prod) and the Vite proxy
+// (dev) forward /api/auth/* to the API, so the auth client needs no baseURL.
 const authClient = createAuthClient();
 
 interface AuthState {

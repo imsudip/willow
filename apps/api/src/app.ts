@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
+import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -11,11 +12,26 @@ import { promptsRoutes } from "./routes/prompts.js";
 import { pushRoutes } from "./routes/push.js";
 import { digestRoutes } from "./routes/digest.js";
 import { transcribeRoutes } from "./routes/transcribe.js";
+import { cronRoutes } from "./routes/cron.js";
+import { env } from "./env.js";
 
-migrate();
+await migrate();
 
 export const app = new Hono();
 app.use("*", logger());
+
+// Browser calls come from the Vercel frontend (or localhost in dev) when the
+// API is served from Neon Functions. Allow credentials so session cookies work.
+app.use(
+  "/api/*",
+  cors({
+    origin: [env.PUBLIC_ORIGIN ?? "", "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean),
+    credentials: true,
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    maxAge: 86400,
+  }),
+);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
@@ -24,6 +40,7 @@ app.route("/api/prompts", promptsRoutes);
 app.route("/api/push", pushRoutes);
 app.route("/api/digest", digestRoutes);
 app.route("/api/transcribe", transcribeRoutes);
+app.route("/api/cron", cronRoutes);
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 

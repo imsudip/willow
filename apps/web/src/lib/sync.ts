@@ -37,11 +37,13 @@ export async function syncNow(): Promise<void> {
     }
     await db.settings.put({ key: "lastSync", value: new Date().toISOString() });
 
-    // Upload audio blobs for entries that have local audio but no server copy
+    // Upload audio blobs for entries that have local audio but no server copy.
+    // (An entry is usually already synced by the time its blob lands, so this
+    // is deliberately not gated on `dirty`.)
     const audioRows = await db.audio.toArray();
     for (const row of audioRows) {
       const e = await db.entries.get(row.entryId);
-      if (e && e.dirty) {
+      if (e && e.audioPresent && e.serverAudioUrl === null) {
         try {
           await client.uploadAudio(e.id, row.blob);
           // Server has it now
