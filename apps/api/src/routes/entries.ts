@@ -5,7 +5,7 @@ import { entries } from "../db/schema.js";
 import { eq, and, gt, desc, isNull } from "drizzle-orm";
 import { syncPullSchema, syncPushSchema } from "@willow/shared";
 import { env } from "../env.js";
-import { createDownloadUrl, deleteAudio, createUploadUrl, getBucketUsageBytes, assertUploadQuota } from "../lib/r2.js";
+import { createDownloadUrl, deleteAudio, createUploadUrl, getBucketUsageBytes, assertUploadQuota, releaseUploadQuota, audioObjectExists } from "../lib/r2.js";
 
 export const entriesRoutes = new Hono();
 
@@ -130,9 +130,10 @@ entriesRoutes.get("/", async (c) => {
 
 // ---- Audio upload / download ----
 
-// PUT /:id/audio no longer accepts the blob directly. The client first calls
-// POST /api/entries/:id/audio-url to get a presigned R2 PUT URL (gated by
-// the 9.9GB bucket cap + 50/day/user limit), then uploads straight to R2.
+// The client first calls POST /api/entries/:id/audio-url to get a presigned
+// R2 PUT URL (gated by the 9.9GB bucket cap + daily per-user limit), uploads
+// straight to R2, then calls POST /api/entries/:id/audio-complete so the
+// entry is only marked as having audio once the object actually exists.
 entriesRoutes.post("/:id/audio-url", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -160,14 +161,40 @@ entriesRoutes.post("/:id/audio-url", async (c) => {
   const ok = await assertUploadQuota(user.id);
   if (!ok) return c.json({ error: "Daily recording limit reached (50/day)." }, 429);
 
-  const url = await createUploadUrl(user.id, row[0].id);
-  // Mark the entry as having server-side audio so playback URL minting works.
-  // (The client PUTs the blob to R2 immediately after receiving this URL.)
+  try {
+    const url = await createUploadUrl(user.id, row[0].id);
+    return c.json({ uploadUrl: url });
+  } catch (err) {
+    console.error("Failed to mint upload URL:", err);
+    // Don't leave a reserved quota slot behind if minting failed.
+    await releaseUploadQuota(user.id, new Date());
+    return c.json({ error: "Could not prepare upload — try again." }, 500);
+  }
+});
+
+// Confirms the blob landed in R2, then marks the entry as having audio.
+// Called by the client after the presigned PUT succeeds.
+entriesRoutes.post("/:id/audio-complete", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+  const row = await db
+    .select()
+    .from(entries)
+    .where(and(eq(entries.id, c.req.param("id")), eq(entries.userId, user.id)))
+    .limit(1);
+  if (row.length === 0) return c.json({ error: "Not found" }, 404);
+
+  const exists = await audioObjectExists(user.id, row[0].id);
+  if (!exists) {
+    return c.json({ error: "Upload not found on storage — try again." }, 409);
+  }
+
   await db
     .update(entries)
     .set({ audioPresent: true, audioPath: `r2://${user.id}/${row[0].id}.webm`, updatedAt: new Date() })
     .where(eq(entries.id, row[0].id));
-  return c.json({ uploadUrl: url });
+  return c.json({ ok: true });
 });
 
 entriesRoutes.delete("/:id/audio", async (c) => {

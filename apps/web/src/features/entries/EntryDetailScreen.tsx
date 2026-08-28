@@ -28,23 +28,29 @@ export function EntryDetailScreen() {
 
   useEffect(() => {
     if (!entry?.audioPresent || !entry.id) return;
-    let url: string | null = null;
+    let disposed = false;
+    let objectUrl: string | null = null;
+    setAudioUrl(null);
+
     void getAudio(entry.id).then(async (blob) => {
+      if (disposed) return;
       if (blob) {
-        url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+        objectUrl = URL.createObjectURL(blob);
+        setAudioUrl(objectUrl);
       } else {
         // No local copy — mint a short-lived presigned URL from the API.
         try {
           const { url: remoteUrl } = await client.getAudioUrl(entry.id);
-          setAudioUrl(remoteUrl);
+          if (!disposed) setAudioUrl(remoteUrl);
         } catch {
           /* audio unavailable */
         }
       }
     });
     return () => {
-      if (url) URL.revokeObjectURL(url);
+      disposed = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setAudioUrl(null);
     };
   }, [entry?.id, entry?.audioPresent]);
 

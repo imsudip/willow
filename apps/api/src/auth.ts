@@ -28,9 +28,13 @@ export const auth = betterAuth({
   },
   trustedOrigins,
   advanced: {
-    // Frontend (Vercel) and API (Neon Functions) are different origins in
-    // production, so the session cookie must work cross-site.
-    crossSubDomain: true,
+    // The browser talks to the API through the Vercel /api rewrite, which is
+    // same-origin, so cross-site cookies are NOT needed. crossSubDomainCookies
+    // is the supported option (crossSubDomain does not exist in better-auth)
+    // and is intentionally left disabled.
+    crossSubDomainCookies: {
+      enabled: false,
+    },
     useSecureCookies: true,
     cookiePrefix: "willow",
   },

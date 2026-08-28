@@ -1,13 +1,11 @@
 import type { ApiEntry, Prompt } from "@willow/shared";
 
-// The API lives on Neon Functions; the frontend on Vercel. In dev, Vite
-// proxies /api to :8777 (same-origin). In prod, prefix with the deployed
-// function origin via VITE_API_ORIGIN.
-const apiOrigin = import.meta.env.VITE_API_ORIGIN as string | undefined;
-
+// All API requests are same-origin: in prod the Vercel /api rewrite forwards
+// to the Neon function; in dev the Vite proxy forwards to :8777. Cookies flow
+// naturally and no cross-origin CORS is involved.
 /** Thin fetch wrapper for the Willow API (session cookies). */
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${apiOrigin ?? ""}${path}`, {
+  const res = await fetch(path, {
     credentials: "include",
     ...init,
   });
@@ -54,8 +52,9 @@ export const client = {
       `/api/entries/sync?since=${encodeURIComponent(since ?? "")}`,
     ),
 
-  // Upload audio: mint a presigned R2 PUT URL from the API, then upload
-  // straight to R2 (never through the API function).
+  // Upload audio: mint a presigned R2 PUT URL from the API, upload straight
+  // to R2 (never through the API function), then tell the API the upload
+  // landed so the entry is marked as having audio.
   uploadAudio: async (entryId: string, blob: Blob) => {
     const { uploadUrl } = await api<{ uploadUrl: string }>(
       `/api/entries/${entryId}/audio-url`,
@@ -67,7 +66,9 @@ export const client = {
       body: blob,
     });
     if (!res.ok) throw new Error(`Upload failed (${res.status})`);
-    return { ok: true };
+    return api<{ ok: boolean }>(`/api/entries/${entryId}/audio-complete`, {
+      method: "POST",
+    });
   },
 
   // Mint a short-lived presigned GET URL for playback.

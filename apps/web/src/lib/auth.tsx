@@ -7,16 +7,9 @@ import {
 } from "react";
 import { createAuthClient } from "better-auth/react";
 
-// The API lives on Neon Functions; the frontend on Vercel. In dev, Vite
-// proxies /api to :8777, so same-origin works. In prod, point at the
-// deployed function origin via VITE_API_ORIGIN.
-const apiOrigin = import.meta.env.VITE_API_ORIGIN as string | undefined;
-
-const authClient = createAuthClient(
-  apiOrigin
-    ? { baseURL: `${apiOrigin}/api/auth` }
-    : undefined,
-);
+// Same-origin by design: the Vercel /api rewrite (prod) and the Vite proxy
+// (dev) forward /api/auth/* to the API, so the auth client needs no baseURL.
+const authClient = createAuthClient();
 
 interface AuthState {
   user: { id: string; email: string; name?: string } | null;

@@ -1,12 +1,13 @@
 # Contributing to Willow
 
 Thanks for wanting to help! Willow is a voice-first journaling PWA — a hobby
-project that runs entirely on free tiers (Vercel + Neon + Cloudflare R2 +
-GitHub Actions). This guide gets you from clone to running code.
+project that runs on free tiers (Vercel + Neon + Cloudflare R2 + GitHub
+Actions; OpenAI usage is metered pay-per-token). This guide gets you from
+clone to running code.
 
 ## Project layout
 
-```
+```text
 apps/web        React + Vite PWA (mobile-first)
 apps/api        Hono API (Postgres, Better Auth, OpenAI, Web Push)
 packages/shared Zod schemas + constants shared by web & api
@@ -63,7 +64,8 @@ npm run build:function -w @willow/api   # esbuild bundle for Neon Functions
 
 Schema lives in `apps/api/src/db/schema.ts` (Drizzle + Postgres). Migrations
 live in `apps/api/drizzle/` and are **applied automatically when the Neon
-Function boots**.
+Function boots** (Drizzle's journal-based migrator, so later migrations apply
+exactly once).
 
 To add a migration:
 
@@ -73,8 +75,7 @@ To add a migration:
    `MOODS` constant at the top of `schema.ts`, generate, then revert.)
 3. Apply locally: `cd apps/api && npx drizzle-kit push` (uses `DATABASE_URL`).
 4. Commit the new `drizzle/<name>.sql` + updated `meta/_journal.json` — the
-   deployed function will apply it on next boot (the migrate step is
-   idempotent).
+   deployed function will apply it on next boot.
 
 ## Code style
 
@@ -92,9 +93,9 @@ See `ARCHITECTURE.md` §7 for the full deploy runbook. In short:
 
 ```bash
 # API → Neon Functions
-node apps/api/scripts/deploy-function.mjs   # requires NEON_API_KEY + .env
+node apps/api/scripts/deploy-function.mjs   # requires NEON_API_KEY + Neon ids + .env
 
-# Frontend → Vercel
+# Frontend → Vercel (set WILLOW_API_URL in the project settings; middleware proxies /api)
 cd apps/web && vercel build --prod --yes && vercel deploy --prebuilt --prod --yes
 ```
 

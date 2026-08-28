@@ -5,13 +5,14 @@ cleans, and stores it as a journal entry — with streaks, mood tracking, prompt
 and a weekly AI digest.
 
 This document explains how the system fits together: the client, the API, the
-data stores, and how they're deployed **entirely on free tiers**.
+data stores, and how they're deployed on free tiers (hosting and infrastructure
+only — OpenAI usage stays metered pay-per-token).
 
 ---
 
 ## 1. Big picture
 
-```
+```text
 ┌─────────────────────┐        ┌──────────────────────────────┐
 │  Browser (PWA)      │  /api/*│  Neon Functions (Node 24)     │
 │  React + Vite       │ ─────▶ │  Hono app (src/function.ts)   │
@@ -68,8 +69,8 @@ persistent VPS. This migration moves each concern to a free tier:
 ## 2. Data model (Postgres)
 
 All tables are defined in `apps/api/src/db/schema.ts` and applied via Drizzle
-migrations in `apps/api/drizzle/` (run automatically at function boot — see
-"Deploy" below).
+migrations in `apps/api/drizzle/` (applied automatically at function boot —
+see "Deploy" below).
 
 | Table | Purpose | Key columns |
 |---|---|---|
@@ -82,8 +83,10 @@ migrations in `apps/api/drizzle/` (run automatically at function boot — see
 ### Free-tier guardrails (why some columns exist)
 
 - **`audio_uploads`** backs the **50 uploads/user/day** cap. Each minted upload
-  URL inserts a row; the endpoint rejects once the daily count is hit. This caps
-  both Class A operations *and* storage growth from a single abusive account.
+  URL reserves a slot inside a transaction (serialized per user, so concurrent
+  requests can't bypass the cap); slots are released if minting fails. This
+  caps both Class A operations *and* storage growth from a single abusive
+  account.
 - **`R2_STORAGE_LIMIT_BYTES`** (env, default 9.9 GB) is checked against the R2
   bucket's live usage before minting any upload URL. At 9.9 GB the app stops
   accepting new recordings — **you can never exceed the 10 GB free tier**.
@@ -100,13 +103,20 @@ Client                    API (Neon)                 R2
   │                                  │ 3. mint PUT URL│
   │  { uploadUrl } ◀───────────────── │                │
   │  PUT audio blob ─────────────────────────────────▶│  (never touches API)
+  │  POST /api/entries/:id/audio-complete ▶ 4. HEAD ✓ │
+  │                                  │ 5. mark present│
   │  GET /api/entries/:id/audio ────▶ │  mint GET URL  │
   │  { url } ◀─────────────────────── │                │
   │  GET (presigned) ────────────────────────────────▶│
 ```
 
 - Upload URLs: **1-hour expiry**, `Content-Type: audio/webm` pinned in the
-  signature (browser must send the same header or R2 rejects with 403).
+  signature (browser must send the same header or R2 rejects with 403), and a
+  signed `Content-Length` cap (`MAX_AUDIO_UPLOAD_BYTES`) so oversized uploads
+  fail at R2 without reaching storage.
+- An entry is only marked `audioPresent` by `POST /:id/audio-complete` after
+  the server confirms the object exists (HEAD) — a failed/cancelled PUT never
+  leaves the entry claiming audio it doesn't have.
 - Playback URLs: **1-hour expiry** — short so a leaked URL can't be hammered
   for a month of Class B reads.
 - Audio object keys are `audio/{userId}/{entryId}.webm` — user-scoped, so even
@@ -172,8 +182,13 @@ admin jobs that operate across all users by design (send pushes, prune audio).
 | Audio retention | nightly `30 4 * * *` | `POST /api/cron/retention` | Delete R2 audio older than `SERVER_AUDIO_RETENTION_DAYS` |
 
 Secrets: `WILLOW_CRON_SECRET` (repo secret), `WILLOW_API_URL` (repo variable =
-the function's invocation URL). The endpoints are idempotent and cheap, so
-manual `workflow_dispatch` runs are safe for testing.
+the function's invocation URL). Each job has an `if` condition matching its own
+schedule tick, so a schedule event only triggers the matching job (manual
+`workflow_dispatch` runs trigger all three). The endpoints are idempotent and
+cheap, so manual runs are safe for testing.
+
+The reminder computes "today" in `CRON_TIMEZONE` (default Asia/Kolkata) so the
+day boundary matches the workflow schedule.
 
 Note: GitHub Actions fires scheduled jobs **within ±~30 min** of the cron time,
 not exactly on it — fine for a journaling nudge.
@@ -194,9 +209,12 @@ missing at runtime. `apps/api/scripts/deploy-function.mjs` handles this:
 2. Packages `index.mjs` + `drizzle/` into `function.zip`.
 3. POSTs to the Neon deploy API with the full env as JSON.
 
-On boot the function runs `migrate()` — **idempotent** (checks `to_regclass`
-for the `account` table and skips if the schema exists) so every cold start
-doesn't re-run `CREATE TABLE`.
+On boot the function runs `migrate()` — Drizzle's journal-based migrator,
+tracking applied migrations in `drizzle.__drizzle_migrations`, so every cold
+start is safe and later migrations apply exactly once. For databases created
+before this tracking existed (e.g. via `drizzle-kit push`), the bootstrap
+one-time-reconciles the journal into the tracking table so existing schemas
+are treated as already migrated.
 
 Run it with:
 
@@ -215,9 +233,12 @@ vercel deploy --prebuilt --prod --yes
 ```
 
 `apps/web/vercel.json`:
-- rewrites `/api/:path*` → the Neon function URL (browser stays same-origin),
 - serves `index.html` for all non-API routes (SPA fallback),
 - disables caching on `sw.js` so PWA updates propagate.
+
+`apps/web/middleware.ts` (Vercel Routing Middleware, Edge runtime) proxies
+`/api/*` to the Neon function URL from the `WILLOW_API_URL` env var — the
+function URL stays out of the repo. Set it in the Vercel project settings:
 
 ### R2 (audio)
 
