@@ -161,6 +161,11 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      # Build @willow/shared first — the web app's `tsc -b && vite build`
+      # imports its dist, which doesn't exist on a fresh runner.
+      - name: Build @willow/shared
+        run: npm run build -w @willow/shared
+
       # Vercel's official CI pattern: pull → build --prod → deploy --prebuilt.
       # NOTE: `vercel pull` requires a TEAM-scoped (or full-account) VERCEL_TOKEN
       # — a project-scoped token fails with "Could not retrieve Project Settings"
