@@ -185,12 +185,22 @@ gh secret set GH_VARIABLES_TOKEN
 
 ### Project IDs — `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 
-**Where (UI):** Vercel project → **Settings** → **General** (scroll to **Project ID**) and account → **Settings** → **Teams** (the **slug** is the org ID).
+**Where (UI):**
+- `VERCEL_ORG_ID` = the **Team ID** (not the slug). Vercel project →
+  **Settings** → **General** → the `orgId` field; or account **Settings** →
+  **Teams** → the team's **ID**. The **slug** (e.g. `imsudips-projects`) is
+  separate and only used for the CLI `--scope` flag.
+- `VERCEL_PROJECT_ID` = project → **Settings** → **General** → **Project ID** (`prj_...`).
 
 ```bash
-vercel project inspect willow   # → ID (prj_...)
-vercel teams ls                 # → team slug
+# The orgId is in the linked project config:
+cat .vercel/project.json          # → { "orgId": "...", "projectId": "prj_..." }
+vercel project inspect willow     # → ID (prj_...)
+vercel teams ls                   # → team slug (not the orgId)
 ```
+
+> ⚠️ `deploy.yml` passes `VERCEL_ORG_ID` straight to the Vercel CLI — it must be
+> the **orgId / Team ID**, not the team slug.
 
 ### `VERCEL_TOKEN`
 
@@ -215,8 +225,14 @@ gh secret set VERCEL_TOKEN
 These live in the **Vercel project**, not `.env.local`:
 
 1. Vercel project → **Settings** → **Environment Variables**.
-2. Add `WILLOW_API_URL` = your Neon function URL
-   (`https://<branch_id>-<slug>.compute.c-5.us-east-2.aws.neon.tech`).
+2. Add `WILLOW_API_URL` = your Neon function's **`invocation_url`** — don't
+   hand-build it (Neon assigns the cell). Get it from the Neon Console
+   (**Compute → Functions**) or the CLI:
+   ```bash
+   neon functions list           # → Slug + Invocation URL
+   neon functions get <slug>     # → the function's invocation_url
+   ```
+   Copy the `invocation_url` (e.g. `https://<branch_id>-<slug>.compute.<cell>.us-east-2.aws.neon.tech`).
 3. Add `VITE_VAPID_PUBLIC_KEY` = your VAPID public key (copy from `.env.local`).
 4. Environment: **Production** (and Preview if you want previews working).
 5. **Redeploy** after changing them.
@@ -226,20 +242,20 @@ These live in the **Vercel project**, not `.env.local`:
 ## What goes into GitHub (push script)
 
 `scripts/push-secrets-to-github.sh` copies values from `.env.local` into GitHub
-Actions:
+Actions as **Secrets** or **Variables**:
 
-| GitHub secret | From `.env.local` |
-| --- | --- |
-| `NEON_API_KEY` | `NEON_API_KEY` |
-| `OPENAI_API_KEY` | `OPENAI_API_KEY` |
-| `AUTH_SECRET` | `AUTH_SECRET` |
-| `CRON_SECRET` | `CRON_SECRET` |
-| `R2_API_TOKEN` | `R2_API_TOKEN` |
-| `R2_ACCOUNT_ID` | `R2_ACCOUNT_ID` |
-| `R2_ACCESS_KEY_ID` | `R2_ACCESS_KEY_ID` |
-| `R2_SECRET_ACCESS_KEY` | `R2_SECRET_ACCESS_KEY` |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | same |
-| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | same |
+| GitHub setting | Type | From `.env.local` |
+| --- | --- | --- |
+| `NEON_API_KEY` | Secret | `NEON_API_KEY` |
+| `OPENAI_API_KEY` | Secret | `OPENAI_API_KEY` |
+| `AUTH_SECRET` | Secret | `AUTH_SECRET` |
+| `CRON_SECRET` | Secret | `CRON_SECRET` |
+| `R2_API_TOKEN` | Secret | `R2_API_TOKEN` |
+| `R2_ACCOUNT_ID` | Secret | `R2_ACCOUNT_ID` |
+| `R2_ACCESS_KEY_ID` | Secret | `R2_ACCESS_KEY_ID` |
+| `R2_SECRET_ACCESS_KEY` | Secret | `R2_SECRET_ACCESS_KEY` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Secret | same |
+| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | **Variable** | same |
 
 **Not set by the script (create once yourself):** `VERCEL_TOKEN` and
 `GH_VARIABLES_TOKEN` (see above).

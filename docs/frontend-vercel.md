@@ -78,4 +78,5 @@ vercel env add VITE_VAPID_PUBLIC_KEY production
 - **PWA updates**: bump the build (sw.js is served with `no-cache`), and
   clients update on next launch (autoUpdate).
 - **API proxy not working** — confirm `WILLOW_API_URL` is set in the Vercel
-  project and points at the live function URL (`.compute.c-5.us-east-2.aws.neon.tech`).
+  project and points at the function's `invocation_url` (get it with
+  `neon functions list`; the live one here is `.compute.c-5.us-east-2.aws.neon.tech`).
