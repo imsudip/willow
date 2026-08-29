@@ -47,16 +47,77 @@ export async function syncNow(): Promise<void> {
         try {
           await client.uploadAudio(e.id, row.blob);
           // Server has it now
-          if (e.serverAudioUrl === null) {
-            await db.entries.update(e.id, { serverAudioUrl: `/api/entries/${e.id}/audio` });
-          }
+          await db.entries.update(e.id, { serverAudioUrl: `/api/entries/${e.id}/audio` });
         } catch {
           /* will retry next sync */
+          continue;
+        }
+
+        // The audio just landed on the server; if this is a deferred entry
+        // (left in "error"/"transcribing" by a failed upload earlier), finish
+        // the job — transcribe, then clean up — so it doesn't stay stuck in
+        // "error" without a transcript.
+        if (e.status === "error" || e.status === "transcribing") {
+          await transcribeAndClean(e.id);
         }
       }
     }
+
+    // Entries whose audio already reached the server but whose transcription
+    // never completed (e.g. the RecordOverlay's transcribe step failed, or the
+    // app closed mid-transcribe) are left in "error"/"transcribing". Resume
+    // them here so they don't stay stuck without a transcript. (`serverAudioUrl`
+    // isn't an indexed Dexie column, so this is a filter scan — fine for the
+    // small local store.)
+    const stalled = await db.entries
+      .filter(
+        (e) =>
+          e.serverAudioUrl !== null &&
+          (e.status === "error" || e.status === "transcribing"),
+      )
+      .toArray();
+    for (const e of stalled) {
+      await transcribeAndClean(e.id);
+    }
   } finally {
     running = false;
+  }
+}
+
+/** Transcribe a server-side entry, then run cleanup; sets status to "ready". */
+async function transcribeAndClean(entryId: string): Promise<void> {
+  const e = await db.entries.get(entryId);
+  if (!e) return;
+  try {
+    const { transcript } = await client.transcribe(entryId);
+    try {
+      const cleaned = await client.cleanup(transcript);
+      await db.entries.update(entryId, {
+        rawTranscript: transcript,
+        cleanedBody: cleaned.body,
+        title: cleaned.title,
+        mood: (cleaned.mood as Entry["mood"]) ?? null,
+        tags: cleaned.tags,
+        status: "ready",
+        errorMessage: null,
+        dirty: true,
+      });
+    } catch {
+      // Keep the transcript; cleanup can be retried from review.
+      await db.entries.update(entryId, {
+        rawTranscript: transcript,
+        status: "ready",
+        errorMessage: null,
+        dirty: true,
+      });
+    }
+  } catch (err) {
+    // Transcribe failed — keep it retryable next sync.
+    await db.entries.update(entryId, {
+      status: "error",
+      errorMessage: err instanceof Error ? err.message : "Transcription failed",
+      dirty: true,
+    });
   }
 }
 
