@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate",
     "lint": "next lint"
@@ -51,9 +52,11 @@
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@types/web-push": "^3.6.4",
+    "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "serwist": "^9.5.12",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
   }
 }

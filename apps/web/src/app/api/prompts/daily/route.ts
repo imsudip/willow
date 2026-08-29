@@ -54,12 +54,27 @@ export async function GET() {
   const { questions } = await generatePrompts(history);
   const toStore = questions.slice(0, PROMPT_COUNT);
 
-  await db.insert(prompts).values({
-    id: crypto.randomUUID(),
-    userId: user.id,
-    date: key,
-    questions: toStore,
-  });
+  // The SPA can fire /daily concurrently (on mount + sync engine), and the
+  // check-then-insert above would race: two requests both see "no cache" and
+  // both insert → unique violation on (user_id, date). Make the insert
+  // idempotent: if a concurrent request already stored today's prompts, do
+  // nothing and fall through to returning the stored row.
+  await db
+    .insert(prompts)
+    .values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      date: key,
+      questions: toStore,
+    })
+    .onConflictDoNothing({ target: [prompts.userId, prompts.date] });
 
-  return NextResponse.json({ questions: toStore });
+  const stored = await db
+    .select()
+    .from(prompts)
+    .where(and(eq(prompts.userId, user.id), eq(prompts.date, key)))
+    .limit(1);
+  const finalQuestions = stored.length > 0 ? stored[0].questions : toStore;
+
+  return NextResponse.json({ questions: finalQuestions.slice(0, PROMPT_COUNT) });
 }

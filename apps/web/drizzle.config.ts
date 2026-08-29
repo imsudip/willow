@@ -1,5 +1,7 @@
 import { defineConfig } from "drizzle-kit";
-import "dotenv/config";
+// Load the repo-root .env.local (same mechanism as the Next.js app), so
+// drizzle-kit picks up DATABASE_URL from the single Willow env file.
+import "./src/lib/env-load";
 
 export default defineConfig({
   dialect: "postgresql",
