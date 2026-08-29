@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { cleanupOutputSchema, entrySchema } from "./schemas.js";
+import {
+  cleanupOutputSchema,
+  entrySchema,
+  openaiKeyUpdateSchema,
+  userConfigSchema,
+  userConfigUpdateSchema,
+} from "./schemas.js";
 
 describe("entrySchema", () => {
   it("accepts a minimal entry", () => {
@@ -55,5 +61,35 @@ describe("cleanupOutputSchema", () => {
       tags: [],
     });
     expect(out.mood).toBeNull();
+  });
+});
+
+describe("userConfigSchema", () => {
+  it("defaults the config", () => {
+    const cfg = userConfigSchema.parse({});
+    expect(cfg.reminderTime).toBe("18:30");
+    expect(cfg.chimesEnabled).toBe(true);
+    expect(cfg.appearance).toBe("system");
+    expect(cfg.openaiKeyConfigured).toBe(false);
+  });
+
+  it("rejects a bad reminder time", () => {
+    expect(() => userConfigSchema.parse({ reminderTime: "6:30pm" })).toThrow();
+  });
+});
+
+describe("userConfigUpdateSchema", () => {
+  it("allows a partial update without the key flag", () => {
+    const patch = userConfigUpdateSchema.parse({ appearance: "dark" });
+    expect(patch.appearance).toBe("dark");
+    // The update body must never carry the "configured" flag.
+    expect("openaiKeyConfigured" in patch).toBe(false);
+  });
+});
+
+describe("openaiKeyUpdateSchema", () => {
+  it("accepts a key or null (to clear)", () => {
+    expect(openaiKeyUpdateSchema.parse({ apiKey: "sk-abc" }).apiKey).toBe("sk-abc");
+    expect(openaiKeyUpdateSchema.parse({ apiKey: null }).apiKey).toBeNull();
   });
 });

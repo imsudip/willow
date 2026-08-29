@@ -43,7 +43,7 @@ All values live in the **single root `.env.local`** (template:
 | Var | Where | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel project env (client-visible) | Web-push public key baked into the client |
-| `DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `R2_*`, `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`, etc. | Vercel project env (server-only) | Server-side secrets; never shipped to the client |
+| `DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `USER_CONFIG_SECRET`, `R2_*`, `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`, etc. | Vercel project env (server-only) | Server-side secrets; never shipped to the client |
 
 > Only `NEXT_PUBLIC_*` vars are exposed to the browser — **never** put secrets
 > in them. Server-only vars stay on the server.

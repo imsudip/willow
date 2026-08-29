@@ -1,12 +1,14 @@
 # Willow → Next.js Migration Plan
 
-> Status: **Completed** (2026-08-29) · The migration landed as a single Next.js
-> app on **Vercel Hobby**, with **Neon Postgres** and **Cloudflare R2**
-> retained, and **GitHub Actions cron** retained.
+> Status: ✅ **Applied** (2026-08-29) · The migration shipped as PR #3
+> ("feat: migrate to Next.js"). This document is the **historical planning
+> artifact** for that migration — Phases 1–4.5 are complete. It's kept for
+> context; the live source of truth is [ARCHITECTURE.md](../ARCHITECTURE.md)
+> and the [docs](../docs/README.md).
 >
-> This is the planning artifact that guided the migration. It's kept for
-> historical reference — the shipped state may have diverged (see
-> [ARCHITECTURE.md](../ARCHITECTURE.md) and `docs/` for the current design).
+> Target (as planned): a single Next.js app on **Vercel Hobby**, with **Neon
+> Postgres** and **Cloudflare R2** retained, and **GitHub Actions cron**
+> retained.
 
 ---
 
@@ -201,9 +203,10 @@ existing architecture.
   `neon-http-serverless`) with `@neondatabase/serverless`. Rationale:
   - Serverless-native, no TCP connection pool to warm up per cold start.
   - Drizzle documents this as the canonical Next.js + Neon path.
-  - You lose raw `pg_advisory_xact_lock`? **No** — Neon serverless still runs
-    Postgres; advisory locks and transactions work. The `assertUploadQuota`
-    logic in `lib/r2.ts` keeps working.
+  - ⚠️ **Correction (found in Phase 4.5):** `drizzle-orm/neon-http` has **no
+    interactive transactions** — `db.transaction` throws. The
+    `assertUploadQuota` gate was rewritten as a single atomic conditional
+    INSERT (CTE) via the raw Neon client. Advisory locks are not used.
 - **Singleton pattern** (required in Next.js dev / serverless):
   ```ts
   // src/lib/db/index.ts
@@ -374,7 +377,7 @@ compute.
 |---|---|---|
 | **4.5 MB body limit breaks `/api/transcribe`** | 🔴 High | Rework to transcribe-from-R2 (§4) — uses existing machinery |
 | **PWA/offline regression** (Dexie SW, workbox, react-router) | 🔴 High | Path A keeps the SPA; port SW carefully; test offline in Phase 3 |
-| **`pg` advisory locks / transactions** | 🟡 Med | Neon serverless still supports them; keep `assertUploadQuota` logic, re-verify |
+| **`db.transaction` on neon-http** | 🟡 Med | **Resolved:** neon-http has no interactive transactions; `assertUploadQuota` uses a single atomic CTE INSERT via the raw Neon client |
 | **DB pool cold starts** | 🟡 Med | `neon-http` is HTTP-based (no pool to warm); acceptable for Hobby |
 | **Migration applied twice / drift** | 🟡 Med | Run `drizzle-kit migrate` as an explicit CI step, not on user traffic |
 | **Better Auth cookie/secure flags same-origin** | 🟢 Low | Same-origin means no cross-site cookie issues; simpler than today |

@@ -35,11 +35,12 @@ describe("API smoke (Next.js Route Handlers)", () => {
     expect(cookies).toContain("willow.session_token");
   });
 
-  // The following two flows need the session cookie injected into `headers()`
+  // The remaining flows need the session cookie injected into `headers()`
   // (Next request scope), which only exists at runtime. Under vitest they
   // throw "`headers` was called outside a request scope", so they're skipped
   // here — they're covered by the Playwright E2E (e2e/auth.spec.ts), which
   // runs against a live Next.js server where the browser sets the cookie.
+  // See also `next experimental-test` for a future app-router-aware runner.
   it.skip("returns fallback prompts with no entries", async () => {
     const res = await promptsDaily();
     const body = (await res.json()) as { questions: { question: string }[] };

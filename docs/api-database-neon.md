@@ -72,13 +72,14 @@ Key vars used by the API:
 | Var | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | yes | Neon pooled connection string |
-| `OPENAI_API_KEY` | yes | Transcription + cleanup + prompts + digest |
+| `OPENAI_API_KEY` | app-level | Default OpenAI key; optional once users bring their own |
 | `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Audio transcription (`POST /v1/audio/transcriptions`) + cleanup models. `TRANSCRIPTION_MODEL` default `gpt-4o-mini-transcribe` (any model supported by that endpoint); `CLEANUP_MODEL` default `gpt-4o-mini` |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 S3 creds for presigned URLs |
 | `R2_API_TOKEN` | yes | Cloudflare API token (R2 read) for the usage gate |
 | `R2_BUCKET` | no | Default `willow-audio` |
 | `CRON_SECRET` | yes | Shared with GitHub Actions |
 | `AUTH_SECRET` | yes | Better Auth session secret |
+| `USER_CONFIG_SECRET` | recommend | Encrypts per-user BYO OpenAI keys (falls back to `AUTH_SECRET`) |
 | `PUBLIC_ORIGIN` | yes in prod | Vercel URL; drives Better Auth baseURL |
 | `CRON_TIMEZONE` | no | Default `Asia/Kolkata`; must match workflow schedules |
 | `VAPID_*` / `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | for push | Web Push keys |
@@ -86,6 +87,23 @@ Key vars used by the API:
 | `MAX_UPLOADS_PER_USER_PER_DAY` | no | Default 50 |
 | `MAX_AUDIO_UPLOAD_BYTES` | no | Default 10 MB |
 | `REMINDER_CRON` | no | Default `30 18 * * *` |
+
+## Per-user config + BYO OpenAI key
+
+Each user has one `user_config` row (`apps/web/src/lib/db/schema.ts`): a JSON
+`config` document (`reminderTime`, `chimesEnabled`, `appearance`) plus their
+optional BYO OpenAI key, **encrypted at rest** (AES-256-GCM with a key derived
+from `USER_CONFIG_SECRET` → `AUTH_SECRET`). Endpoints:
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/user/config` | GET | Read the user's settings (never the key) |
+| `/api/user/config` | PATCH | Partial update of the settings JSON |
+| `/api/user/config/openai-key` | PUT | Set (encrypt) or clear the user's OpenAI key |
+
+The key is never returned by any endpoint — the client only learns
+`openaiKeyConfigured`. On every AI request the server resolves the key per-user
+(BYO key > app `OPENAI_API_KEY`) via `apps/web/src/lib/user-config.ts`.
 
 ## Deploying
 

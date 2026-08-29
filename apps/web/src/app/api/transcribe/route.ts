@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/index";
 import { entries } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/auth-helpers";
-import { aiAvailable } from "@/lib/services/openai";
+import { openaiClientFor } from "@/lib/services/openai";
 import { transcribeAudioFile } from "@/lib/services/transcription";
 import { r2, audioKey } from "@/lib/r2";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -29,7 +29,10 @@ const transcribeBodySchema = z.object({
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!aiAvailable())
+
+  // Resolve the OpenAI key: the user's BYO key, else the app default.
+  const client = await openaiClientFor(user.id);
+  if (!client)
     return NextResponse.json(
       { error: "Transcription is not configured" },
       { status: 503 },
@@ -89,7 +92,7 @@ export async function POST(req: Request) {
     const buffer = new ArrayBuffer(bytes.byteLength);
     new Uint8Array(buffer).set(bytes);
     const file = new File([buffer], "recording.webm", { type: "audio/webm" });
-    const transcript = await transcribeAudioFile(file);
+    const transcript = await transcribeAudioFile(file, client.apiKey);
     return NextResponse.json({ transcript });
   } catch (err) {
     return NextResponse.json(

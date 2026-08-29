@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Per-user config + bring-your-own OpenAI key (BYOK)**: one `user_config` row
+  per user (settings JSON: reminder, chimes, appearance) + the user's OpenAI
+  key, **encrypted at rest** (AES-256-GCM, key from `USER_CONFIG_SECRET` →
+  `AUTH_SECRET`). New endpoints `/api/user/config` (GET/PATCH) and
+  `/api/user/config/openai-key` (PUT). The key is never returned to the client;
+  AI calls resolve **user key > app `OPENAI_API_KEY`** per request.
 - **CI/CD pipeline** (`deploy.yml`): test → deploy API to Neon → deploy web to
   Vercel → re-sync `WILLOW_API_URL` for cron → smoke test → tag release.
 - **CI gate** (`ci.yml`): typecheck + tests on every PR and push to `main`.

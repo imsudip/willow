@@ -51,7 +51,7 @@ export async function GET() {
     daysAgo: daysAgo(r.recordedAt),
   }));
 
-  const { questions } = await generatePrompts(history);
+  const { questions } = await generatePrompts(user.id, history);
   const toStore = questions.slice(0, PROMPT_COUNT);
 
   // The SPA can fire /daily concurrently (on mount + sync engine), and the

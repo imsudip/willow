@@ -19,6 +19,7 @@
 | `R2_API_TOKEN` | Cloudflare | [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) → **Create Token** (R2 read) | Secret |
 | `R2_BUCKET` | Cloudflare R2 | the bucket you created (default `willow-audio`) | Non-secret |
 | `AUTH_SECRET` | local | generate: `openssl rand -hex 32` | Secret |
+| `USER_CONFIG_SECRET` | local | generate: `openssl rand -hex 32` (optional; falls back to `AUTH_SECRET`) | Secret |
 | `CRON_SECRET` | local | generate: `openssl rand -hex 32` | Secret |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | local | generate: `npm run vapid -w @willow/web` | Secret (private) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel | copy of `VAPID_PUBLIC_KEY` — the only client-visible var | Non-secret |
@@ -33,7 +34,7 @@
 
 | Variable | Required? | Type |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | yes (all AI features) | Secret |
+| `OPENAI_API_KEY` | optional (see BYOK below) | Secret |
 
 **Where:** [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 
@@ -43,9 +44,21 @@
 4. Give it a name (e.g. `willow`) and choose a **Project**.
 5. **Copy the key immediately** — it's shown only once (starts with `sk-` or `sk-proj-`).
 
-> The key must have access to `gpt-live-transcribe` (transcription) and
+> The key must have access to `gpt-4o-mini-transcribe` (transcription) and
 > `gpt-4o-mini` (cleanup/prompts/digest). Server-side only — never ship it to
 > the client.
+
+### Bring-your-own-key (BYOK)
+
+`OPENAI_API_KEY` is the **app default**; it's optional because each user can
+bring their own key from the **Settings → OpenAI key** screen. A user's key is
+stored **encrypted at rest** in `user_config.openai_api_key_enc` (AES-256-GCM,
+key derived from `USER_CONFIG_SECRET` → `AUTH_SECRET`) and is never returned to
+the client. On each AI request the server resolves **user key > app key**.
+
+> **Rotation note:** if you rotate `AUTH_SECRET`, previously stored user keys
+> become undecryptable (treated as "no key"). Setting a distinct
+> `USER_CONFIG_SECRET` avoids this — rotate that deliberately instead.
 
 ---
 
@@ -113,6 +126,7 @@ leave the repo except as GitHub secrets.
 | Variable | Generate with | Notes |
 | --- | --- | --- |
 | `AUTH_SECRET` | `openssl rand -hex 32` | Better Auth session secret |
+| `USER_CONFIG_SECRET` | `openssl rand -hex 32` | Encrypts per-user BYO OpenAI keys (falls back to `AUTH_SECRET`) |
 | `CRON_SECRET` | `openssl rand -hex 32` | Shared with GitHub Actions for `/api/cron/*` |
 
 ### Web Push — `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`

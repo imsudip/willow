@@ -70,8 +70,8 @@ bash scripts/push-secrets-to-github.sh
 ```
 
 - **Secrets** (masked): `DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`,
-  `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN` (create via the
-  [Vercel Tokens page](https://vercel.com/account/tokens) or
+  `USER_CONFIG_SECRET`, `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN`
+  (create via the [Vercel Tokens page](https://vercel.com/account/tokens) or
   `vercel tokens add "<name>"`, then `gh secret set VERCEL_TOKEN`).
 - **Variables** (non-secret): `R2_BUCKET`, tuning limits, `PUBLIC_ORIGIN`,
   `CRON_TIMEZONE`, `VAPID_SUBJECT`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,

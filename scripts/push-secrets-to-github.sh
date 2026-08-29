@@ -36,7 +36,7 @@ echo "→ GitHub repo: $(gh repo view --json nameWithOwner -q .nameWithOwner 2>/
 
 echo "── Secrets ──"
 for k in \
-  DATABASE_URL OPENAI_API_KEY AUTH_SECRET CRON_SECRET \
+  DATABASE_URL OPENAI_API_KEY AUTH_SECRET USER_CONFIG_SECRET CRON_SECRET \
   R2_API_TOKEN R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY \
   VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY; do
   set_secret "$k"

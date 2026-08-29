@@ -24,6 +24,12 @@ const envSchema = z.object({
   AUTH_SECRET: z.string().min(8),
   PUBLIC_ORIGIN: z.string().url().optional(),
 
+  // Secret used to encrypt per-user BYO OpenAI keys (user_config). Defaults
+  // to AUTH_SECRET so self-hosters don't need another var, but you SHOULD set
+  // a distinct value in production (rotating AUTH_SECRET then won't break
+  // stored keys).
+  USER_CONFIG_SECRET: z.string().min(8).optional(),
+
   // Postgres (Neon). Injected as DATABASE_URL on Vercel; from .env.local locally.
   DATABASE_URL: z.string().min(1),
 

@@ -4,20 +4,21 @@ import { env } from "../env";
 /**
  * Transcribes an uploaded audio file via the OpenAI audio transcriptions
  * endpoint (`POST /v1/audio/transcriptions`). The audio blob comes from the
- * client; the OpenAI key stays server-side.
+ * client; the OpenAI key (app default or the user's BYO key) is resolved by
+ * the caller and never leaves the server.
  *
  * Uses the configured TRANSCRIPTION_MODEL when set (any model supported by
  * that endpoint, e.g. gpt-4o-mini-transcribe), falling back to
  * gpt-4o-mini-transcribe otherwise.
  */
-export async function transcribeAudioFile(blob: File): Promise<string> {
+export async function transcribeAudioFile(blob: File, apiKey: string): Promise<string> {
   const form = new FormData();
   form.append("file", blob, "recording.webm");
   form.append("model", env.TRANSCRIPTION_MODEL || FALLBACK_TRANSCRIPTION_MODEL);
 
   const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
+    headers: { Authorization: `Bearer ${apiKey}` },
     body: form,
   });
   if (!res.ok) {

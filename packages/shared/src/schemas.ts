@@ -76,3 +76,35 @@ export const settingsSchema = z.object({
   appearance: z.enum(["light", "dark", "system"]).default("system"),
 });
 export type Settings = z.infer<typeof settingsSchema>;
+
+/**
+ * Server-side per-user config. One row per user in `user_config`.
+ * `openaiApiKeyEnc` holds the user's BYO OpenAI key, symmetrically encrypted
+ * with an app secret — never plaintext, and never returned to the client
+ * (the client only sees `openaiKeyConfigured`).
+ */
+export const userConfigSchema = z.object({
+  reminderTime: z.string().regex(/^\d{2}:\d{2}$/).default("18:30"),
+  chimesEnabled: z.boolean().default(true),
+  appearance: z.enum(["light", "dark", "system"]).default("system"),
+  openaiKeyConfigured: z.boolean().default(false),
+});
+export type UserConfig = z.infer<typeof userConfigSchema>;
+
+/** Body for updating config (key is a separate field so it's never echoed). */
+export const userConfigUpdateSchema = userConfigSchema
+  .omit({ openaiKeyConfigured: true })
+  .partial();
+export type UserConfigUpdate = z.infer<typeof userConfigUpdateSchema>;
+
+/** Body for setting/clearing the user's OpenAI key. */
+export const openaiKeyUpdateSchema = z.object({
+  apiKey: z.string().min(1).max(512).nullable(),
+});
+export type OpenaiKeyUpdate = z.infer<typeof openaiKeyUpdateSchema>;
+
+/** Server response for GET /api/user/config (never contains the key). */
+export const userConfigResponseSchema = userConfigSchema.extend({
+  openaiKeyConfigured: z.boolean(),
+});
+export type UserConfigResponse = z.infer<typeof userConfigResponseSchema>;
