@@ -1,8 +1,8 @@
 import type { ApiEntry, Prompt } from "@willow/shared";
 
-// All API requests are same-origin: in prod the Vercel /api rewrite forwards
-// to the Neon function; in dev the Vite proxy forwards to :8777. Cookies flow
-// naturally and no cross-origin CORS is involved.
+// All API requests are same-origin: Next.js serves the app AND the /api/*
+// Route Handlers, so no proxy, no CORS, no cross-origin cookies. Cookies flow
+// naturally.
 /** Thin fetch wrapper for the Willow API (session cookies). */
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -21,14 +21,16 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export const client = {
   getPrompts: () => api<{ questions: Prompt[] }>("/api/prompts/daily"),
 
-  transcribe: async (blob: Blob) => {
-    const form = new FormData();
-    form.append("file", blob, "recording.webm");
-    return api<{ transcript: string }>("/api/transcribe", {
+  // REWORKED: audio uploads straight to R2 (presigned) as part of
+  // uploadAudio(); transcribe now takes the entryId and the server reads the
+  // blob from R2 (Vercel caps request bodies at 4.5MB, so the audio never
+  // goes through the Route Handler).
+  transcribe: (entryId: string) =>
+    api<{ transcript: string }>("/api/transcribe", {
       method: "POST",
-      body: form,
-    });
-  },
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId }),
+    }),
 
   cleanup: (transcript: string) =>
     api<{ title: string; body: string; mood: string | null; tags: string[] }>(

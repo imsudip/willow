@@ -9,10 +9,11 @@
 
 ```text
 apps/
-  api/     Hono API (Node 22+, Postgres/Drizzle, Better Auth, OpenAI, Web Push)
-  web/     React 19 + Vite PWA (Tailwind 4, Dexie, service worker)
+  web/     Next.js app (App Router) — the whole app: client SPA + /api Route
+           Handlers (Postgres/Drizzle via neon-http, Better Auth, OpenAI, R2,
+           Web Push). Tailwind 4, Dexie, Serwist service worker.
 packages/
-  shared/  Zod schemas + constants shared by web & api (built first)
+  shared/  Zod schemas + constants shared by the app (built first)
 docs/      per-service wikis (API+Neon, Vercel, R2, GitHub Actions, OpenAI)
 scripts/   one-shot tooling (env sync, secret push)
 .github/
@@ -20,44 +21,57 @@ scripts/   one-shot tooling (env sync, secret push)
 ```
 
 Monorepo is npm **workspaces**. `@willow/shared` must be **built** before
-`@willow/api` or `@willow/web` typecheck/build (they import its `dist`).
+`apps/web` typecheck/build (it imports the package's `dist`).
+
+> There is no separate `apps/api` — the API is the Next.js Route Handlers in
+> `apps/web/src/app/api/*`.
 
 ## Golden rules
 
 1. **Secrets never in code, logs, or chat.** Server-side env vars live only in
-   the gitignored `.env.local` and GitHub Actions secrets. `VITE_*` vars are
-   client-visible — never put secrets there.
+   the gitignored `.env.local`, GitHub Actions secrets, and Vercel project env.
+   Only `NEXT_PUBLIC_*` vars reach the client — never put secrets there.
 2. **One env file.** The repo uses a single root `.env.local` (template
-   `.env.example`). The API loads it via `apps/api/src/env-load.ts`; Vite loads
-   it via `envDir` in `apps/web/vite.config.ts`. Do not add per-app `.env`
-   files.
+   `.env.example`). The app loads it via `apps/web/src/lib/env-load.ts`
+   (called from `next.config.ts`); drizzle-kit reads it via
+   `apps/web/drizzle.config.ts`. In prod, the same values are Vercel project
+   env + GitHub secrets. Do not add per-app `.env` files.
 3. **Migrations, not `drizzle-kit push` in prod.** Schema changes are committed
-   as migrations in `apps/api/drizzle/` and applied automatically on Neon
-   function boot. Only `drizzle-kit push` for **local** convenience.
+   as migrations in `apps/web/drizzle/` and applied by the `deploy.yml`
+   pipeline (`drizzle-kit migrate` against Neon before build). Only
+   `drizzle-kit push` for **local** convenience.
 4. **Don't commit to `main` directly.** Work on a feature branch, open a PR.
    The `Deploy` pipeline runs on push to `main` — a direct push deploys prod.
-5. **Server-only OpenAI.** The API proxies every model call; the key never
+5. **Server-only OpenAI.** Route Handlers make every model call; the key never
    reaches the client. Audio is uploaded to R2 via presigned URLs, never
-   through the API.
+   through the app.
 6. **Free-tier discipline.** Keep changes within the free tiers: Neon Postgres
-   (100 CU-hrs), R2 (10 GB), Vercel static, GitHub Actions minutes. Guardrails
+   (100 CU-hrs), R2 (10 GB), Vercel, GitHub Actions minutes. Guardrails
    (`R2_STORAGE_LIMIT_BYTES`, `MAX_UPLOADS_PER_USER_PER_DAY`) protect R2.
+7. **Path A (client-rendered SPA + Next server).** Willow is offline-first and
+   will later wrap into a native app — keep the browser-rendered SPA + Dexie as
+   the source of truth. Don't add SSR/RSC screen rendering. See
+   `docs/migration-nextjs.md`.
 
 ## Commands
 
 ```bash
 npm ci                          # install (use this over npm install for CI parity)
-npm run build                   # shared → web → api
+npm run build                   # shared → web (Next build; uses webpack for Serwist)
 npm run typecheck               # all workspaces
-npm test                        # shared + api tests (vitest)
-npm run dev                     # API watch :8777
-npm run dev:web                 # web :5173 (proxies /api → :8777)
-npm run lint -w @willow/web     # eslint (note: no ESLint config in repo yet)
+npm test                        # shared tests (vitest)
+npm run dev                     # Next dev server :3000 (serves SPA + /api)
+npm run test -w @willow/web     # web unit tests (vitest)
+npm run migrate -w @willow/web  # apply Drizzle migrations to Neon
+npm run vapid -w @willow/web    # generate VAPID keys into .env.local
 ```
 
-> **No ESLint config exists** in the repo, so `npm run lint` currently fails.
+> **No ESLint config exists** in the repo, so there is no `npm run lint` yet.
 > CI gates are `typecheck` + `test` only. If you wire up ESLint, add it back to
 > `.github/workflows/ci.yml` and `deploy.yml`.
+>
+> The Next build uses **webpack** (`next build --webpack`) because Serwist
+> (`@serwist/next`) doesn't support Turbopack yet.
 
 ## Environment
 
@@ -67,52 +81,46 @@ Everything is driven by one file:
 cp .env.example .env.local   # then fill in values
 ```
 
-- **`apps/api/src/env.ts`** — Zod-validated env schema (authoritative list).
-- **`apps/api/src/env-load.ts`** — loads `.env.local` from the repo root
-  (lookup order: `$WILLOW_ENV_FILE` → repo root → package dir).
+- **`apps/web/src/lib/env.ts`** — Zod-validated env schema (authoritative list).
+- **`apps/web/src/lib/env-load.ts`** — loads `.env.local` from the repo root
+  (called from `next.config.ts`).
 - **`.env.example`** — annotated template covering every service.
 
 CI/deploy secrets come from GitHub Actions (populated by
 `scripts/push-secrets-to-github.sh`). Vercel project env is set in the Vercel
 dashboard (see `docs/frontend-vercel.md`).
 
-## API (apps/api)
-
-- **Stack**: Hono (`app.ts`), Better Auth (`auth.ts`), Drizzle + `pg`
-  (`db/`), OpenAI (`services/openai.ts`).
-- **Two entrypoints**:
-  - `src/index.ts` — standalone Node server (local dev, `@hono/node-server` +
-    WebSocket).
-  - `src/function.ts` — Neon Functions runtime (`export default app`);
-    deployed via the esbuild bundle + zip in `scripts/neon-deploy.mjs`.
-- **Migrations**: `apps/api/drizzle/`; applied on boot by `db/bootstrap.ts`
-  (`migrate()`) — idempotent. Run `cd apps/api && npx drizzle-kit generate
-  --name <name>` for schema changes.
-- **Free-tier gates**: R2 usage check + per-user upload quota live in the
-  audio-URL route.
-- **Tests**: `test/` (vitest). Covers smoke + timezone helpers.
-
 ### Adding env vars
 
-1. Add to the Zod schema in `apps/api/src/env.ts` (with default where sane).
+1. Add to the Zod schema in `apps/web/src/lib/env.ts` (with default where sane).
 2. Add to `.env.example` with a comment.
-3. If needed by the deployed function, ensure it's forwarded by
-   `scripts/neon-deploy.mjs` (the `environment` JSON) and optionally added to
-   `scripts/push-secrets-to-github.sh`.
+3. If server-side: set it in the **Vercel project env**; if CI needs it, add it
+   to `scripts/push-secrets-to-github.sh`. If client-visible (rare — only
+   `NEXT_PUBLIC_*`), prefix with `NEXT_PUBLIC_`.
 
-## Web (apps/web)
+## App (apps/web)
 
-- **Stack**: React 19 + Vite 6 + Tailwind 4 (`@tailwindcss/vite`),
-  `vite-plugin-pwa` (injectManifest, `src/sw.ts`), Dexie (`src/lib/db.ts`),
+- **Stack**: Next.js 16 (App Router) + React 19 + Tailwind 4 + Serwist.
+- **Server (API)**: Route Handlers in `src/app/api/*` — auth
+  (`src/lib/auth-server.ts` + `[...all]/route.ts`), entries/sync/audio,
+  prompts, digest, push, transcribe, cron, health. Shared server logic in
+  `src/lib/` (db, r2, env, timezone, services/*).
+- **Database**: Drizzle + `drizzle-orm/neon-http` (`src/lib/db/index.ts`,
+  `globalThis` singleton), schema in `src/lib/db/schema.ts`, migrations in
+  `drizzle/`.
+- **Client (SPA)**: client-rendered SPA served by the catch-all
+  `src/app/[[...slug]]/page.tsx` (client-only mount — no SSR). Routing via
+  `react-router-dom`, screens under `src/features/*`. Dexie (`src/lib/db.ts`),
   sync engine (`src/lib/sync.ts`), Better Auth client (`src/lib/auth.tsx`).
-- **Routing**: `react-router-dom`; screens under `src/features/*`.
+- **Service worker**: Serwist (`src/app/sw.ts` → `public/sw.js`).
 - **Styling**: Tailwind v4 with design tokens in `src/index.css`; UI primitives
   in `src/components/ui/`.
-- **Env**: Vite reads the **root** `.env.local` (via `envDir`). Only `VITE_*`
-  vars reach the client.
-- **Deploy**: static build → Vercel; `/api/*` is proxied by
-  `middleware.ts` at the edge using `WILLOW_API_URL`. No Vercel serverless
-  functions — keep it that way (free tier + no usage billing).
+- **Env**: `NEXT_PUBLIC_*` vars reach the client (only
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` today).
+- **Tests**: `test/` (vitest) — timezone unit tests; API flows are validated
+  via browser E2E (Next Route Handlers need the request scope).
+- **Deploy**: single Vercel deploy (SPA + API + auth + cron endpoints all in
+  one project). No proxy, no separate API host.
 
 ## Docs & process
 
@@ -160,7 +168,7 @@ yourself, for each file below, "does this change?":
 | Workflow | When | Purpose |
 |---|---|---|
 | `ci.yml` | PR + push to main | `npm ci` → typecheck → test (cheap gate) |
-| `deploy.yml` | push to main | test → deploy API (Neon) → deploy web (Vercel) → sync cron var → smoke → tag |
+| `deploy.yml` | push to main | test → migrate Neon (via `DATABASE_URL`) → deploy the single Next.js app to Vercel → smoke → tag |
 | `cron.yml` | schedule | evening reminder / weekly digest / audio retention |
 
 Deploy secrets/vars: see `docs/ci-cd-github-actions.md`. One-time local setup:

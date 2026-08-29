@@ -82,20 +82,19 @@ npm install
 # ONE env file for everything — copy the template and fill it in
 cp .env.example .env.local
 
-# start both servers
-npm run dev            # API on :8777 (hot reload)
-npm run dev:web        # web on :5173 (proxies /api → :8777)
+# start the Next.js dev server (serves the SPA + /api Route Handlers)
+npm run dev            # http://localhost:3000
 ```
 
-Open http://localhost:5173.
+Open http://localhost:3000.
 
 > Every service's variables are annotated in [`.env.example`](.env.example) —
-> API runtime, web build, Neon Functions, GitHub Actions, and Vercel.
+> the Next.js runtime, Neon Postgres, GitHub Actions, and Vercel.
 
 ### Deploy with your own accounts
 
-Willow is built to be self-hosted. One pipeline deploys and manages every
-service (API → Neon, web → Vercel, cron + CI via GitHub Actions) on push to
+Willow is built to be self-hosted. One pipeline deploys the whole app
+(Next.js → Vercel, migrations → Neon, cron + CI via GitHub Actions) on push to
 `main`:
 
 ```bash
@@ -112,8 +111,8 @@ Guides and per-service docs live in the **[GitHub Wiki](https://github.com/imsud
 
 - **[Home](https://github.com/imsudip/willow/wiki)** — index & quick start
 - **[Secrets & Environment](https://github.com/imsudip/willow/wiki/Secrets-and-Environment)** — where to get every token/secret
-- **[API + Database (Neon)](https://github.com/imsudip/willow/wiki/API-Database-Neon)** — Hono API, migrations, deploy
-- **[Frontend (Vercel)](https://github.com/imsudip/willow/wiki/Frontend-Vercel)** — static PWA, proxy, rollback
+- **[API + Database (Neon)](https://github.com/imsudip/willow/wiki/API-Database-Neon)** — Next.js Route Handlers, Neon, migrations, deploy
+- **[Frontend (Vercel)](https://github.com/imsudip/willow/wiki/Frontend-Vercel)** — Next.js PWA, same-origin API, rollback
 - **[Audio storage (R2)](https://github.com/imsudip/willow/wiki/Audio-Storage-R2)** — presigned URLs, guardrails
 - **[CI/CD & cron (GitHub Actions)](https://github.com/imsudip/willow/wiki/CI-CD-GitHub-Actions)** — pipelines, secrets
 - **[AI features (OpenAI)](https://github.com/imsudip/willow/wiki/AI-Features-OpenAI)** — models, cost
@@ -131,9 +130,10 @@ Repo docs:
 
 **Cause** — The OpenAI key is missing, or lacks access to `gpt-live-transcribe` / `gpt-4o-mini`.
 
-**How to fix** — Confirm `OPENAI_API_KEY` is set in `.env.local` (and in the
-GitHub `OPENAI_API_KEY` secret for deployed functions), then check the Neon
-function logs for the OpenAI error.
+**How to fix** — Confirm `OPENAI_API_KEY` is set in `.env.local` for local dev,
+and in the **Vercel project env vars** for production (plus the GitHub
+`OPENAI_API_KEY` secret for CI/cron). Then check the **Vercel function logs**
+for the OpenAI error.
 
 ### 2. Auth fails with `INVALID_ORIGIN`
 
@@ -175,10 +175,10 @@ Contributions and suggestions are always welcome. 🙏
 Willow is free software licensed under the [GNU Affero General Public License
 v3.0](LICENSE). See the [LICENSE](LICENSE) file for details.
 
-Libraries used: [Hono](https://github.com/honojs/hono) (MIT),
+Libraries used: [Next.js](https://github.com/vercel/next.js) (MIT),
 [React](https://github.com/facebook/react) (MIT), [Better Auth](https://github.com/better-auth/better-auth) (MIT),
 [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm) (Apache-2.0),
-[Vite](https://github.com/vitejs/vite) (MIT), [Dexie](https://github.com/dexie/Dexie.js) (Apache-2.0).
+[Serwist](https://github.com/serwist/serwist) (MIT), [Dexie](https://github.com/dexie/Dexie.js) (Apache-2.0).
 
 ---
 

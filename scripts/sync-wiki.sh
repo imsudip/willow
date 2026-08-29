@@ -56,8 +56,8 @@ This wiki mirrors the [repo docs]($REPO_URL/tree/main/docs) as standalone pages.
 ## Getting around
 
 - **[Secrets & Environment](Secrets-and-Environment)** — where to get every token/secret
-- **[API & Database (Neon)](API-Database-Neon)** — Hono API, migrations, deploy
-- **[Frontend (Vercel)](Frontend-Vercel)** — static PWA, proxy, rollback
+- **[API & Database (Neon)](API-Database-Neon)** — Next.js Route Handlers, Neon, migrations, deploy
+- **[Frontend (Vercel)](Frontend-Vercel)** — Next.js PWA, same-origin API, rollback
 - **[Audio storage (R2)](Audio-Storage-R2)** — presigned URLs, guardrails
 - **[CI/CD & cron (GitHub Actions)](CI-CD-GitHub-Actions)** — pipelines, secrets
 - **[AI features (OpenAI)](AI-Features-OpenAI)** — models, cost
@@ -67,8 +67,7 @@ This wiki mirrors the [repo docs]($REPO_URL/tree/main/docs) as standalone pages.
 \`\`\`bash
 npm install
 cp .env.example .env.local   # ONE env file for everything
-npm run dev                  # API on :8777
-npm run dev:web              # web on :5173
+npm run dev                  # Next.js dev server :3000 (SPA + /api)
 \`\`\`
 
 See the [README]($REPO_URL#readme) for the full overview, screenshots, and

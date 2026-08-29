@@ -7,6 +7,18 @@ dist/
 build/
 *.tsbuildinfo
 
+# next.js
+.next/
+out/
+apps/web/public/sw.js
+apps/web/public/swe-worker*
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # env + secrets
 .env
 .env.*

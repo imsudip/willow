@@ -14,8 +14,12 @@ on:
       timezone: "Asia/Kolkata"
   workflow_dispatch: # allow manual runs for testing
 
-# The jobs only curl a public endpoint with a secret header — no GITHUB_TOKEN
-# usage, so disable the default permissions entirely.
+# The jobs only curl the Vercel production URL with a secret header — no
+# GITHUB_TOKEN usage, so disable the default permissions entirely.
+#
+# NOTE: WILLOW_API_URL must point at the Vercel production URL (e.g.
+# https://willow-alpha-one.vercel.app). The Next.js app serves /api/cron/*
+# itself — there is no separate API host anymore.
 permissions: {}
 
 jobs:

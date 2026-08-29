@@ -12,7 +12,7 @@
 | Variable | Service | Where to get it | Type |
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) → **Create new secret key** | Secret |
-| `DATABASE_URL` | Neon Postgres | `neon env pull` (local) / auto-injected on Functions | Secret |
+| `DATABASE_URL` | Neon Postgres | `neon env pull` (local) or paste the pooled URL into `.env.local` | Secret |
 | `R2_ACCOUNT_ID` | Cloudflare R2 | Dashboard → **R2** → top-right account ID | Non-secret |
 | `R2_ACCESS_KEY_ID` | Cloudflare R2 | R2 → **Manage R2 API Tokens** → create (shown once) | Secret |
 | `R2_SECRET_ACCESS_KEY` | Cloudflare R2 | same token creation (shown once) | Secret |
@@ -20,13 +20,12 @@
 | `R2_BUCKET` | Cloudflare R2 | the bucket you created (default `willow-audio`) | Non-secret |
 | `AUTH_SECRET` | local | generate: `openssl rand -hex 32` | Secret |
 | `CRON_SECRET` | local | generate: `openssl rand -hex 32` | Secret |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | local | generate: `npm run vapid -w @willow/api` | Secret (private) |
-| `NEON_PROJECT_ID` / `NEON_BRANCH_ID` / `NEON_FUNCTION_SLUG` | Neon | Neon Console (or `neon project list` / `neon branch list` / `neon functions list`) | Non-secret |
-| `NEON_API_KEY` | Neon | Console → **Account settings** → **API keys** → **Create new API key** | Secret |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | local | generate: `npm run vapid -w @willow/web` | Secret (private) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel | copy of `VAPID_PUBLIC_KEY` — the only client-visible var | Non-secret |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Vercel | Vercel project **Settings** → ID fields | Non-secret |
 | `VERCEL_TOKEN` | Vercel | [vercel.com/account/tokens](https://vercel.com/account/tokens) → **Create Token** (team-scoped) | Secret (CI-only) |
-| `WILLOW_API_URL` | Neon/Vercel | The Neon function URL — set in the **Vercel project**, not `.env.local` | Non-secret |
-| `VITE_VAPID_PUBLIC_KEY` | Vercel | Copy of `VAPID_PUBLIC_KEY` — set in the **Vercel project** for prod builds | Non-secret |
+| `WILLOW_API_URL` | Vercel | the **Vercel production URL** (e.g. `https://willow-alpha-one.vercel.app`) — set as a GitHub var for cron | Non-secret |
+| `WILLOW_PRODUCTION_URL` | Vercel | the **Vercel production URL** — set as a GitHub var for the smoke test | Non-secret |
 
 ---
 
@@ -50,46 +49,18 @@
 
 ---
 
-## Neon (Postgres + Functions)
+## Neon (Postgres)
 
 ### Database connection — `DATABASE_URL`
 
-- **Deployed (Neon Functions):** injected automatically — you do **not** set this.
 - **Local dev:** in the repo root, run:
   ```bash
-  neon link          # one-time, links the repo to your Neon project
-  neon checkout main # writes .env.local DATABASE_URL (and pulls branch env)
+  neon env pull  # writes .env.local DATABASE_URL
   ```
   Or paste the pooled connection string from the Neon Console:
   Console → **Project** → **Connect** → **Connection string** (Pooled).
-
-### Deploy identifiers — `NEON_PROJECT_ID`, `NEON_BRANCH_ID`, `NEON_FUNCTION_SLUG`
-
-**Where (UI):** [console.neon.tech](https://console.neon.tech)
-
-| Variable | Where to look |
-| --- | --- |
-| `NEON_PROJECT_ID` | Console → select your project → the ID is in the URL (`/project/<id>`) and under **Project settings** |
-| `NEON_BRANCH_ID` | Console → **Branches** → select the branch → the ID is in the URL (`/branches/<id>`) |
-| `NEON_FUNCTION_SLUG` | Console → **Compute** → **Functions** (or Neon CLI `neon functions list`) |
-
-**Or via CLI:**
-```bash
-neon project list    # → ID
-neon branch list     # → ID
-neon functions list  # → Slug + invocation URL
-```
-
-> ⚠️ Functions are only supported in **AWS US East (Ohio)** — create the project
-> there or the deploy API will reject it.
-
-### `NEON_API_KEY`
-
-**Where (UI):** Neon Console → click your **avatar** (top-right) → **Account settings** → **API keys** → **Create new API key**.
-
-1. Give it a descriptive name (e.g. `ci-deploy`).
-2. Click **Create**.
-3. **Copy the key once** — it starts with `napi_` and is shown only once (revoke/recreate if lost).
+- **Production:** set `DATABASE_URL` as a **Vercel project env var** (server-only)
+  **and** as a **GitHub secret** (the deploy pipeline's migrate step needs it).
 
 ---
 
@@ -147,11 +118,11 @@ leave the repo except as GitHub secrets.
 ### Web Push — `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 
 ```bash
-npm run vapid -w @willow/api
+npm run vapid -w @willow/web
 ```
-This prints the three values; add them to `.env.local`. `VAPID_SUBJECT` is a
-`mailto:` address (e.g. `mailto:you@example.com`). Without these, push
-reminders/digests are disabled.
+This writes the three values into `.env.local` (or `--print` them).
+`VAPID_SUBJECT` is a `mailto:` address (e.g. `mailto:you@example.com`).
+Without these, push reminders/digests are disabled.
 
 ---
 
@@ -203,22 +174,26 @@ Then store it:
 gh secret set VERCEL_TOKEN
 ```
 
-### `WILLOW_API_URL` + `VITE_VAPID_PUBLIC_KEY` (Vercel project env)
+### `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (Vercel project env)
 
-These live in the **Vercel project**, not `.env.local`:
+The **only** client-visible var. Set it in the Vercel project:
 
 1. Vercel project → **Settings** → **Environment Variables**.
-2. Add `WILLOW_API_URL` = your Neon function's **`invocation_url`** — don't
-   hand-build it (Neon assigns the cell). Get it from the Neon Console
-   (**Compute → Functions**) or the CLI:
-   ```bash
-   neon functions list           # → Slug + Invocation URL
-   neon functions get <slug>     # → the function's invocation_url
-   ```
-   Copy the `invocation_url` (e.g. `https://<branch_id>-<slug>.compute.<cell>.us-east-2.aws.neon.tech`).
-3. Add `VITE_VAPID_PUBLIC_KEY` = your VAPID public key (copy from `.env.local`).
-4. Environment: **Production** (and Preview if you want previews working).
-5. **Redeploy** after changing them.
+2. Add `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = your VAPID public key (copy from
+   `.env.local`).
+3. Environment: **Production** (and Preview if you want previews working).
+4. **Redeploy** after changing it.
+
+> All other server vars (`DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`,
+> `R2_*`, `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`) are set as server-only
+> Vercel project env vars too — they never reach the client.
+
+### GitHub vars for cron + smoke test
+
+- `WILLOW_API_URL` = the **Vercel production URL** (e.g.
+  `https://willow-alpha-one.vercel.app`) — `cron.yml` hits `/api/cron/*` on it.
+- `WILLOW_PRODUCTION_URL` = the same production URL — `deploy.yml` smoke-tests
+  `/api/health` on it.
 
 ---
 
@@ -229,7 +204,7 @@ Actions as **Secrets** or **Variables**:
 
 | GitHub setting | Type | From `.env.local` |
 | --- | --- | --- |
-| `NEON_API_KEY` | Secret | `NEON_API_KEY` |
+| `DATABASE_URL` | Secret | `DATABASE_URL` |
 | `OPENAI_API_KEY` | Secret | `OPENAI_API_KEY` |
 | `AUTH_SECRET` | Secret | `AUTH_SECRET` |
 | `CRON_SECRET` | Secret | `CRON_SECRET` |
@@ -241,4 +216,4 @@ Actions as **Secrets** or **Variables**:
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | **Variable** | same |
 
 **Not set by the script (create once yourself):** `VERCEL_TOKEN` (team-scoped —
-see above).
+see above), `WILLOW_API_URL` and `WILLOW_PRODUCTION_URL` (the Vercel prod URL).

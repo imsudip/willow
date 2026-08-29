@@ -8,8 +8,9 @@
 **Cloudflare R2** stores the audio recordings. For **storage**, the browser
 never sends audio through the API — it uses short-lived presigned URLs to
 upload/download straight to R2, so the function isn't a bandwidth bottleneck
-and there are **zero egress fees**. (Transcription is a separate flow: audio
-is sent to the API's `/api/transcribe` endpoint for OpenAI processing.)
+and there are **zero egress fees**. (Transcription is a separate flow:
+`/api/transcribe` reads the already-uploaded R2 object server-side and sends
+it to OpenAI — the raw audio never enters a request body.)
 
 - Bucket: `willow-audio`
 - Free tier: 10 GB storage, 1M Class A + 10M Class B ops/mo, no egress
@@ -20,7 +21,7 @@ is sent to the API's `/api/transcribe` endpoint for OpenAI processing.)
 sequenceDiagram
     autonumber
     participant C as Browser (PWA)
-    participant A as API (Neon Function)
+    participant A as API (Next.js Route Handler on Vercel)
     participant R as Cloudflare R2
 
     C->>A: POST /api/entries/:id/audio-url

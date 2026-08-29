@@ -1,14 +1,16 @@
-# Willow — single pipeline that deploys and manages every service.
+# Willow — single pipeline that builds and deploys the Next.js app to Vercel.
 #
 # Triggered on push to main (and optionally on release). It:
-#   1. Runs the full test suite + typecheck.
-#   2. Builds & deploys the API to Neon Functions (with migrations on boot).
-#   3. Health-checks the deployed API.
-#   4. Builds & deploys the PWA to Vercel (--prebuilt, so no double build).
-#   5. Points the Vercel edge proxy (middleware.ts) at the new API URL.
-#   6. Sets WILLOW_API_URL so the GitHub Actions cron can reach the API.
-#   7. Runs a smoke test against the live stack.
-#   8. Tags a release.
+#   1. Runs the full test suite + typecheck (gate).
+#   2. Builds @willow/shared (the web app imports its dist).
+#   3. Applies DB migrations to Neon (idempotent; DATABASE_URL from secrets).
+#   4. Builds & deploys the Next.js app to Vercel (--prebuilt).
+#   5. Runs a smoke test against the live production URL.
+#   6. Tags a release.
+#
+# The app is now a single Next.js deploy: the API (Route Handlers), the SPA,
+# auth, and cron endpoints all live in the same Vercel project. The old
+# two-stage (Neon Functions API + Vercel static) pipeline is retired.
 #
 # External services (Neon project, R2 bucket, Vercel project, OpenAI account)
 # are created once in their dashboards; this pipeline deploys to them and
@@ -16,16 +18,19 @@
 #
 # Required repo secrets/vars (one-time setup):
 #   Secrets:
-#     NEON_API_KEY, OPENAI_API_KEY, CRON_SECRET, AUTH_SECRET,
+#     OPENAI_API_KEY, CRON_SECRET, AUTH_SECRET,
 #     R2_API_TOKEN, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN
+#     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VERCEL_TOKEN, DATABASE_URL
 #   Vars:
-#     NEON_PROJECT_ID, NEON_BRANCH_ID, NEON_FUNCTION_SLUG,
-#     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_API_URL (set once for cron),
-#     WILLOW_HEALTH_URL (optional), CRON_TIMEZONE (optional, e.g. "Asia/Kolkata")
+#     VERCEL_ORG_ID, VERCEL_PROJECT_ID, WILLOW_API_URL (Vercel prod URL, for cron),
+#     WILLOW_PRODUCTION_URL, PUBLIC_ORIGIN, CRON_TIMEZONE, TRANSCRIPTION_MODEL,
+#     CLEANUP_MODEL, R2_BUCKET, R2_STORAGE_LIMIT_BYTES,
+#     MAX_UPLOADS_PER_USER_PER_DAY, MAX_AUDIO_UPLOAD_BYTES, VAPID_SUBJECT
 #
-# Populate everything in one go:
+# Populate secrets/vars in one go:
 #   bash scripts/push-secrets-to-github.sh
+#   gh secret set DATABASE_URL   # the Neon pooled connection string
+#   gh variable set WILLOW_API_URL "$(vercel ...)"   # Vercel prod URL for cron
 
 name: Deploy
 
@@ -34,13 +39,11 @@ on:
     branches: [main]
     paths-ignore: ["docs/**", "**.md", "assets/**"]
   workflow_dispatch: {} # manual redeploy
-  # Optionally deploy when a release is published instead of on every push:
-  # release:
-  #   types: [published]
 
-# Read-only by default; deploy steps explicitly request what they need.
+# Read-only by default; only the finalize job (which tags a release) is
+# granted write access to repository contents.
 permissions:
-  contents: write # for tagging a release and setting repo vars
+  contents: read
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -50,17 +53,15 @@ env:
   # Vercel deploy target project (single project: apps/web).
   VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-  # Optional override for the health check URL (defaults to the Neon URL).
-  WILLOW_HEALTH_URL: ${{ vars.WILLOW_HEALTH_URL }}
+  # Production URL for the smoke test (defaults to the known Vercel alias).
+  WILLOW_PRODUCTION_URL: ${{ vars.WILLOW_PRODUCTION_URL }}
 
 jobs:
   # ── 1 · Gate: tests + typecheck ──────────────────────────────────────────
-  # (lint intentionally omitted: the repo has no ESLint config yet — see ci.yml)
   test:
     name: Test & typecheck
     runs-on: ubuntu-latest
-    # Postgres for the API smoke tests (they boot the real app, which runs
-    # migrate() at import time and needs a real DATABASE_URL).
+    # Postgres for the shared/schema tests (vitest).
     services:
       postgres:
         image: postgres:16-alpine
@@ -87,68 +88,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
-  # ── 2 · Deploy API → Neon Functions ───────────────────────────────────────
-  deploy-api:
-    name: Deploy API to Neon
+  # ── 2 · Deploy the Next.js app → Vercel (with migrations) ────────────────
+  deploy:
+    name: Deploy to Vercel
     needs: test
     runs-on: ubuntu-latest
-    # workflow_dispatch lets a user pick any branch/tag; only ever deploy main
-    # (push events to main also match this).
     if: github.ref == 'refs/heads/main'
-    timeout-minutes: 20
-    outputs:
-      api_url: ${{ steps.derive-url.outputs.api_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Deploy to Neon (zip + environment)
-        env:
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-          NEON_BRANCH_ID: ${{ vars.NEON_BRANCH_ID }}
-          NEON_FUNCTION_SLUG: ${{ vars.NEON_FUNCTION_SLUG }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          R2_API_TOKEN: ${{ secrets.R2_API_TOKEN }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          TRANSCRIPTION_MODEL: ${{ vars.TRANSCRIPTION_MODEL }}
-          CLEANUP_MODEL: ${{ vars.CLEANUP_MODEL }}
-          REMINDER_CRON: ${{ vars.REMINDER_CRON }}
-          CRON_TIMEZONE: ${{ vars.CRON_TIMEZONE }}
-          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
-          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
-          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
-          R2_BUCKET: ${{ vars.R2_BUCKET }}
-          R2_STORAGE_LIMIT_BYTES: ${{ vars.R2_STORAGE_LIMIT_BYTES }}
-          MAX_UPLOADS_PER_USER_PER_DAY: ${{ vars.MAX_UPLOADS_PER_USER_PER_DAY }}
-          MAX_AUDIO_UPLOAD_BYTES: ${{ vars.MAX_AUDIO_UPLOAD_BYTES }}
-        run: node apps/api/scripts/neon-deploy.mjs
-
-      # Derive the function URL so downstream jobs (Vercel proxy, cron var,
-      # smoke test) can point at this exact deployment.
-      - name: Derive API URL
-        id: derive-url
-        run: |
-          URL="https://${{ vars.NEON_BRANCH_ID }}-${{ vars.NEON_FUNCTION_SLUG }}.compute.c-5.us-east-2.aws.neon.tech"
-          echo "api_url=${URL}" >> "$GITHUB_OUTPUT"
-          echo "Deployed API URL: ${URL}"
-
-  # ── 3 · Deploy web → Vercel (needs the API URL for the edge proxy) ───────
-  deploy-web:
-    name: Deploy web to Vercel
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    outputs:
-      vercel_url: ${{ steps.deploy-vercel.outputs.vercel_url }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -157,18 +103,24 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Install Vercel CLI
-        run: npm i -g vercel@latest
-
-      # Build @willow/shared first — the web app's `tsc -b && vite build`
-      # imports its dist, which doesn't exist on a fresh runner.
+      # Build @willow/shared first — the web app's Next build imports its
+      # dist, which doesn't exist on a fresh runner.
       - name: Build @willow/shared
         run: npm run build -w @willow/shared
 
+      # Apply DB migrations to Neon (idempotent). DATABASE_URL is the Neon
+      # pooled connection string (same one the app uses at runtime).
+      - name: Migrate database (Neon)
+        working-directory: apps/web
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run migrate
+
       # Vercel's official CI pattern: pull → build --prod → deploy --prebuilt.
       # NOTE: `vercel pull` requires a TEAM-scoped (or full-account) VERCEL_TOKEN
-      # — a project-scoped token fails with "Could not retrieve Project Settings"
-      # (vercel/vercel#17506). See docs/environment-secrets.md.
+      # — a project-scoped token fails with "Could not retrieve Project Settings".
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
 
       - name: Pull Vercel Environment Information
         working-directory: apps/web
@@ -184,34 +136,25 @@ jobs:
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          # Middleware needs the API URL at build/edge time.
-          WILLOW_API_URL: ${{ needs.deploy-api.outputs.api_url }}
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Project Artifacts to Vercel
-        id: deploy-vercel
         working-directory: apps/web
         env:
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
-          echo "vercel_url=${DEPLOY_URL}" >> "$GITHUB_OUTPUT"
-          echo "Deployed Vercel URL: ${DEPLOY_URL}"
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
-  # ── 4 · Smoke test + release (only when everything deployed) ─────────────
-  # (The WILLOW_API_URL repo variable for cron is set ONCE — the Neon function
-  # URL is stable across deploys — so we don't re-sync it here; that avoids a
-  # fragile fine-grained-PAT dependency in the pipeline.)
+  # ── 3 · Smoke test + release (only when everything deployed) ─────────────
   finalize:
     name: Smoke test & release
-    needs: [deploy-api, deploy-web]
+    needs: deploy
     runs-on: ubuntu-latest
-    if: always() && needs.deploy-api.result == 'success' && needs.deploy-web.result == 'success'
+    if: always() && needs.deploy.result == 'success'
+    permissions:
+      contents: write # for tagging a release
     steps:
-      # fetch-depth 0 + fetch-tags so `git describe --tags` sees existing tags
-      # (avoids duplicate release tags on retries/redeploys).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -223,33 +166,23 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # Smoke test: hit the deployed API THROUGH the Vercel edge proxy so the
-      # middleware (apps/web/middleware.ts) is exercised end-to-end. Use the
-      # stable PRODUCTION alias (the deployment-specific URL from `vercel
-      # deploy` isn't promoted/propagated to the edge immediately, so it can
-      # 302/404). When WILLOW_HEALTH_URL is configured, check it directly.
+      # Smoke test: hit the deployed app's health endpoint on the stable
+      # PRODUCTION alias (the deployment-specific URL from `vercel deploy`
+      # isn't promoted/propagated to the edge immediately, so it can 302/404).
       - name: Smoke test live stack
         env:
-          WILLOW_HEALTH_URL: ${{ env.WILLOW_HEALTH_URL }}
-          WILLOW_PRODUCTION_URL: ${{ vars.WILLOW_PRODUCTION_URL }}
+          WILLOW_PRODUCTION_URL: ${{ env.WILLOW_PRODUCTION_URL }}
         run: |
           set -euo pipefail
-          if [ -n "${WILLOW_HEALTH_URL:-}" ]; then
-            code=$(curl -sS -o /dev/null -w '%{http_code}' "$WILLOW_HEALTH_URL" || true)
-            echo "health (direct override): HTTP $code"
-            test "$code" = "200"
-          else
-            PROD="${WILLOW_PRODUCTION_URL:-https://willow-alpha-one.vercel.app}"
-            code=$(curl -sS -o /dev/null -w '%{http_code}' "$PROD/api/health" || true)
-            echo "health (via Vercel proxy on $PROD): HTTP $code"
-            test "$code" = "200"
-          fi
+          PROD="${WILLOW_PRODUCTION_URL:-https://willow-alpha-one.vercel.app}"
+          # Bounded timeouts so an unresponsive endpoint fails the probe
+          # promptly instead of waiting out the runner job timeout.
+          code=$(curl -sS --connect-timeout 10 --max-time 60 \
+            -o /dev/null -w '%{http_code}' "$PROD/api/health" || true)
+          echo "health on $PROD: HTTP $code"
+          test "$code" = "200"
 
       # Tag a release (skipped if the commit already has a tag).
-      # `gh auth setup-git` re-wires git's HTTPS credential helper to the
-      # built-in GITHUB_TOKEN (granted `contents: write` above), so the tag
-      # push works even though checkout runs with persist-credentials: false
-      # (without it, `git push` fails with "could not read Username" / exit 128).
       - name: Tag release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -263,3 +196,4 @@ jobs:
             git push origin "$TAG"
             echo "Tagged $TAG"
           fi
+

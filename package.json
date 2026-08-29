@@ -21,7 +21,7 @@
     "pwa",
     "offline-first",
     "react",
-    "hono"
+    "nextjs"
   ],
   "type": "module",
   "workspaces": [
@@ -29,13 +29,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @willow/api",
-    "dev:web": "npm run dev -w @willow/web",
-    "build": "npm run build -w @willow/shared && npm run build -w @willow/web && npm run build -w @willow/api",
-    "typecheck": "npm run build -w @willow/shared && npm run typecheck -w @willow/shared && npm run typecheck -w @willow/api && npm run typecheck -w @willow/web",
-    "test": "npm run test -w @willow/shared && npm run test -w @willow/api",
-    "start": "npm run build && node apps/api/dist/index.js",
-    "lint": "npm run lint -w @willow/web"
+    "dev": "npm run dev -w @willow/web",
+    "build": "npm run build -w @willow/shared && npm run build -w @willow/web",
+    "typecheck": "npm run build -w @willow/shared && npm run typecheck -w @willow/shared && npm run typecheck -w @willow/web",
+    "test": "npm run test -w @willow/shared",
+    "start": "npm run build && npm run start -w @willow/web"
   },
   "engines": {
     "node": ">=22"

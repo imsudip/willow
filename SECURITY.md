@@ -48,11 +48,11 @@ Instead, report privately:
 
 **In scope:**
 
-- The API (`apps/api`) — auth, entry/sync endpoints, cron endpoints, R2
-  presigned-URL handling
-- The web app (`apps/web`) — client-side auth, IndexedDB sync, service worker
-- The deployment/CI configuration (`apps/api/scripts/*`, `.github/workflows/*`,
-  `scripts/*`) insofar as it could leak secrets or credentials
+- The app (`apps/web`) — the Next.js Route Handlers (auth, entry/sync endpoints,
+  cron endpoints, R2 presigned-URL handling) and the client (SPA, IndexedDB
+  sync, service worker)
+- The deployment/CI configuration (`.github/workflows/*`, `scripts/*`) insofar
+  as it could leak secrets or credentials
 
 **Out of scope:**
 
@@ -69,7 +69,9 @@ release before publicly disclosing. We'll coordinate a release date with you.
 ## Security-relevant config
 
 - **Secrets** (API keys, `AUTH_SECRET`, `CRON_SECRET`, R2 credentials) live only
-  in the gitignored `.env.local` and GitHub Actions secrets — never in the repo.
-- **`VITE_*` vars are client-visible** — never put secrets there.
-- The API **never** receives raw audio through the proxy; uploads go straight to
-  R2 via short-lived presigned URLs.
+  in the gitignored `.env.local`, GitHub Actions secrets, and Vercel project env
+  — never in the repo.
+- **`NEXT_PUBLIC_*` vars are client-visible** — never put secrets there.
+- The app **never** receives raw audio through a request body; uploads go
+  straight to R2 via short-lived presigned URLs, and transcription reads the
+  blob back from R2 server-side.
