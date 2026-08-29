@@ -105,9 +105,28 @@ export function RecordOverlay() {
     await saveAudio(id, blob);
     await db.entries.put(entry);
 
-    // Upload + transcribe
+    // Upload the audio straight to R2 (presigned) — this is also what makes
+    // the blob available for server-side transcription (Vercel caps request
+    // bodies at 4.5MB, so audio never goes through the API).
     try {
-      const { transcript } = await client.transcribe(blob);
+      await client.uploadAudio(id, blob);
+      await db.entries.update(id, { serverAudioUrl: `/api/entries/${id}/audio`, dirty: true });
+    } catch (err) {
+      await db.entries.update(id, {
+        status: "error",
+        errorMessage: err instanceof Error ? err.message : "Upload failed",
+        dirty: true,
+      });
+      setError(
+        "Couldn't upload right now. Your recording is saved — it will upload when you're back online.",
+      );
+      setPhase("idle");
+      return;
+    }
+
+    // Transcribe from R2 (server-side), then cleanup
+    try {
+      const { transcript } = await client.transcribe(id);
       await db.entries.update(id, { rawTranscript: transcript, status: "cleaning", dirty: true });
       setPhase("cleaning");
 
