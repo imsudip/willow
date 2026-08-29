@@ -173,6 +173,46 @@ export const pushSubscriptions = pgTable(
   (t) => [uniqueIndex("push_user_endpoint_unique").on(t.userId, t.endpoint)],
 );
 
+// ---- Per-user config (server-side settings + BYO OpenAI key) ----
+
+/**
+ * One JSON document of settings per user, stored server-side (the client's
+ * Dexie `settings` table is a local cache that mirrors this). `openaiApiKeyEnc`
+ * is the user's BYO OpenAI key, symmetrically encrypted with an app secret —
+ * never plaintext. `key_updated_at` lets the server invalidate cached
+ * per-user OpenAI clients when a key changes.
+ */
+export const userConfig = pgTable(
+  "user_config",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    config: jsonb("config")
+      .$type<{
+        reminderTime: string;
+        chimesEnabled: boolean;
+        appearance: "light" | "dark" | "system";
+      }>()
+      .notNull()
+      .default({
+        reminderTime: "18:30",
+        chimesEnabled: true,
+        appearance: "system",
+      }),
+    openaiApiKeyEnc: text("openai_api_key_enc"),
+    keyUpdatedAt: timestamp("key_updated_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .default(sql`now()`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .default(sql`now()`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [index("user_config_key_updated_idx").on(t.keyUpdatedAt)],
+);
+
 // ---- Upload quota (free-tier abuse gate) ----
 
 export const audioUploads = pgTable(

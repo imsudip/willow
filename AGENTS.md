@@ -103,11 +103,19 @@ dashboard (see `docs/frontend-vercel.md`).
 - **Stack**: Next.js 16 (App Router) + React 19 + Tailwind 4 + Serwist.
 - **Server (API)**: Route Handlers in `src/app/api/*` — auth
   (`src/lib/auth-server.ts` + `[...all]/route.ts`), entries/sync/audio,
-  prompts, digest, push, transcribe, cron, health. Shared server logic in
-  `src/lib/` (db, r2, env, timezone, services/*).
+  prompts, digest, push, transcribe, cron, health, user config
+  (`/api/user/config` + `/openai-key`). Shared server logic in `src/lib/`
+  (db, r2, env, timezone, user-config, services/*).
 - **Database**: Drizzle + `drizzle-orm/neon-http` (`src/lib/db/index.ts`,
   `globalThis` singleton), schema in `src/lib/db/schema.ts`, migrations in
-  `drizzle/`.
+  `drizzle/`. ⚠️ neon-http has **no interactive transactions** — use a single
+  SQL statement / `neonSql` for atomic logic.
+- **Per-user config & BYOK**: one `user_config` row per user (`src/lib/db/schema.ts`)
+  holds server-side settings (reminder, chimes, appearance) + the user's BYO
+  OpenAI key, **encrypted at rest** (AES-256-GCM via `src/lib/user-config.ts`,
+  key derived from `USER_CONFIG_SECRET` → `AUTH_SECRET`). The key is never
+  returned to the client (only `openaiKeyConfigured`). On AI requests the
+  server resolves **user key > app `OPENAI_API_KEY`**.
 - **Client (SPA)**: client-rendered SPA served by the catch-all
   `src/app/[[...slug]]/page.tsx` (client-only mount — no SSR). Routing via
   `react-router-dom`, screens under `src/features/*`. Dexie (`src/lib/db.ts`),

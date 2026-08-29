@@ -49,6 +49,15 @@ test.describe("Willow auth journey", () => {
     await expect(page.getByText("E2E Tester")).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
 
+    // ── 6.5 · BYO OpenAI key: set + verify "configured", then clear ──
+    await expect(page.getByText("OpenAI key (optional)")).toBeVisible();
+    await page.getByPlaceholder("sk-…").fill("sk-e2e-test-key-1234567890");
+    await page.getByRole("button", { name: "Save key" }).click();
+    await expect(page.getByText(/Key saved/)).toBeVisible();
+    // Clear it again so the E2E user doesn't hold a (fake) key.
+    await page.getByRole("button", { name: "Remove" }).click();
+    await expect(page.getByText("Key removed.")).toBeVisible();
+
     // ── 7 · Sign out → back to login ──
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(

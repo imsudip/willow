@@ -1,6 +1,6 @@
 import { cleanupOutputSchema, type CleanupOutput } from "@willow/shared";
 import { env } from "../env";
-import { aiAvailable, openai } from "./openai";
+import { openaiClientFor } from "./openai";
 
 const CLEANUP_SYSTEM = `You are an expert journal editor. Your job is to turn a raw, rambling voice transcript into a clean journal entry.
 
@@ -14,11 +14,15 @@ Rules:
 - Respond with valid JSON only, matching this schema:
 { "title": string, "body": string, "mood": "calm"|"grateful"|"tired"|"anxious"|"happy"|"sad"|"energetic"|"stressed"|"hopeful"|"neutral"|null, "tags": string[] }`;
 
-export async function cleanupTranscript(transcript: string): Promise<CleanupOutput> {
-  if (!aiAvailable()) {
+export async function cleanupTranscript(
+  userId: string,
+  transcript: string,
+): Promise<CleanupOutput> {
+  const client = await openaiClientFor(userId);
+  if (!client) {
     throw new Error("OpenAI is not configured");
   }
-  const completion = await openai.responses.create({
+  const completion = await client.responses.create({
     model: env.CLEANUP_MODEL,
     instructions: CLEANUP_SYSTEM,
     input: transcript,

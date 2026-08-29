@@ -128,12 +128,15 @@ Repo docs:
 
 **Symptom** — Entries save but stay untranscribed.
 
-**Cause** — The OpenAI key is missing, or lacks access to `gpt-live-transcribe` / `gpt-4o-mini`.
+**Cause** — No OpenAI key is available: the app-level `OPENAI_API_KEY` is unset
+and the user hasn't set their own key (Settings → OpenAI key), or the key lacks
+access to `gpt-4o-mini-transcribe` / `gpt-4o-mini`.
 
 **How to fix** — Confirm `OPENAI_API_KEY` is set in `.env.local` for local dev,
 and in the **Vercel project env vars** for production (plus the GitHub
-`OPENAI_API_KEY` secret for CI/cron). Then check the **Vercel function logs**
-for the OpenAI error.
+`OPENAI_API_KEY` secret for CI/cron); or have the user add their own key in
+Settings (encrypted at rest). Then check the **Vercel function logs** for the
+OpenAI error.
 
 ### 2. Auth fails with `INVALID_ORIGIN`
 

@@ -5,7 +5,7 @@ import {
   type Prompt,
 } from "@willow/shared";
 import { env } from "../env";
-import { aiAvailable, openai } from "./openai";
+import { openaiClientFor } from "./openai";
 import type { PromptSource } from "./prompt-sources";
 
 const PROMPT_SYSTEM = `You are a thoughtful friend helping someone journal at the end of the day.
@@ -38,9 +38,11 @@ export const FALLBACK_PROMPTS: Prompt[] = [
 ];
 
 export async function generatePrompts(
+  userId: string,
   history: PromptContextEntry[],
 ): Promise<{ questions: Prompt[]; usedFallback: boolean }> {
-  if (history.length < PROMPT_MIN_ENTRIES || !aiAvailable()) {
+  const client = await openaiClientFor(userId);
+  if (history.length < PROMPT_MIN_ENTRIES || !client) {
     return { questions: FALLBACK_PROMPTS, usedFallback: true };
   }
 
@@ -52,7 +54,7 @@ export async function generatePrompts(
     )
     .join("\n");
 
-  const completion = await openai.responses.create({
+  const completion = await client.responses.create({
     model: env.CLEANUP_MODEL,
     instructions: PROMPT_SYSTEM,
     input: context,

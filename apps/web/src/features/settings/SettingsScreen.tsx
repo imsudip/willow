@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Moon, Volume2, LogOut, Trash2 } from "lucide-react";
+import { Bell, Moon, Volume2, KeyRound, LogOut, Trash2 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { client } from "../../lib/api";
 import { db } from "../../lib/db";
@@ -26,8 +26,12 @@ export function SettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [saved, setSaved] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [openaiKeyConfigured, setOpenaiKeyConfigured] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [keyMsg, setKeyMsg] = useState<{ text: string; error: boolean } | null>(null);
 
-  // Load settings
+  // Load settings: server-side user_config is the source of truth; fall back
+  // to the local Dexie cache when offline / not yet synced.
   useEffect(() => {
     (async () => {
       const [t, c, a] = await Promise.all([
@@ -35,9 +39,21 @@ export function SettingsScreen() {
         db.settings.get("chimes"),
         getAppearance(),
       ]);
-      if (t) setReminderTime(t.value as string);
-      if (c !== undefined) setChimes(c.value as boolean);
-      setAppearance(a);
+      let localT = t?.value as string | undefined;
+      let localC = c?.value as boolean | undefined;
+      let localA = a;
+      try {
+        const cfg = await client.getUserConfig();
+        if (cfg.reminderTime) localT = cfg.reminderTime;
+        if (cfg.chimesEnabled !== undefined) localC = cfg.chimesEnabled;
+        if (cfg.appearance) localA = cfg.appearance;
+        setOpenaiKeyConfigured(cfg.openaiKeyConfigured);
+      } catch {
+        // Offline — keep the local cache values.
+      }
+      if (localT) setReminderTime(localT);
+      if (localC !== undefined) setChimes(localC);
+      setAppearance(localA);
     })();
   }, []);
 
@@ -58,8 +74,34 @@ export function SettingsScreen() {
     await db.settings.put({ key: "reminderTime", value: reminderTime });
     await db.settings.put({ key: "chimes", value: chimes });
     await db.settings.put({ key: "appearance", value: appearance });
+    // Persist server-side too (best effort — ignore offline errors).
+    try {
+      await client.updateUserConfig({
+        reminderTime,
+        chimesEnabled: chimes,
+        appearance,
+      });
+    } catch {
+      /* offline: local cache keeps working */
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function saveOpenaiKey() {
+    const value = apiKeyInput.trim();
+    setKeyMsg(null);
+    try {
+      const res = await client.setOpenaiKey(value === "" ? null : value);
+      setOpenaiKeyConfigured(res.openaiKeyConfigured);
+      setApiKeyInput("");
+      setKeyMsg({
+        text: value === "" ? "Key removed." : "Key saved. It's encrypted at rest and never leaves the server.",
+        error: false,
+      });
+    } catch (err) {
+      setKeyMsg({ text: err instanceof Error ? err.message : "Failed to save key", error: true });
+    }
   }
 
   async function togglePush() {
@@ -161,6 +203,46 @@ export function SettingsScreen() {
         >
           {saved ? "Saved" : "Save settings"}
         </button>
+      </section>
+
+      {/* Bring-your-own OpenAI key — stored encrypted server-side, used only
+          for this account's transcription / cleanup / prompts / digest. */}
+      <section className="space-y-4 rounded-2xl border border-line bg-surface p-4">
+        <div className="flex items-center gap-3">
+          <KeyRound className="h-5 w-5 text-muted" aria-hidden />
+          <div>
+            <p className="text-sm font-medium">OpenAI key (optional)</p>
+            <p className="text-xs text-muted">
+              Bring your own key for transcription, cleanup, prompts &amp; digest. Encrypted at rest;
+              it never leaves the server.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="password"
+            placeholder={openaiKeyConfigured ? "•••••••• (set — enter to replace)" : "sk-…"}
+            value={apiKeyInput}
+            onChange={(e) => setApiKeyInput(e.target.value)}
+            autoComplete="off"
+            className="min-h-11 w-full rounded-lg border border-line bg-canvas px-3 text-sm"
+          />
+          <button
+            onClick={() => void saveOpenaiKey()}
+            className="whitespace-nowrap rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-ink"
+          >
+            {apiKeyInput.trim() === "" && openaiKeyConfigured ? "Remove" : "Save key"}
+          </button>
+        </div>
+        {openaiKeyConfigured && !apiKeyInput && (
+          <p className="text-xs text-emerald-500">A key is set for this account.</p>
+        )}
+        {keyMsg && (
+          <p className={`text-xs ${keyMsg.error ? "text-danger" : "text-emerald-500"}`}>
+            {keyMsg.text}
+          </p>
+        )}
       </section>
 
       <section className="space-y-3">

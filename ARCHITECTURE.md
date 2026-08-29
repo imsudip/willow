@@ -15,26 +15,26 @@ only — OpenAI usage stays metered pay-per-token).
 ```mermaid
 flowchart LR
     subgraph Client["Browser (PWA)"]
-        R[React SPA (client-rendered)]
-        IDB[(IndexedDB / Dexie)]
-        SW[Service worker / Serwist]
+        R["React SPA (client-rendered)"]
+        IDB[("IndexedDB / Dexie")]
+        SW["Service worker / Serwist"]
     end
 
     subgraph Edge["Vercel"]
-        N[Next.js app<br/>SPA + /api Route Handlers<br/>Better Auth · Drizzle]
+        N["Next.js app (SPA + /api Route Handlers · Better Auth · Drizzle)"]
     end
 
-    DB[(Neon Postgres<br/>entries, users, ...)]
-    R2[(Cloudflare R2<br/>audio files)]
-    O[OpenAI API<br/>transcription + cleanup/digest]
-    GH[GitHub Actions<br/>cron triggers]
+    DB[("Neon Postgres (entries, users, config)")]
+    R2[("Cloudflare R2 (audio files)")]
+    O["OpenAI API (transcription, cleanup, prompts, digest)"]
+    GH["GitHub Actions (cron triggers)"]
 
-    R -- /api/* (same-origin) --> N
-    N -- SQL (neon-http) --> DB
-    N -- presigned PUT/GET --> R2
-    N --> O
-    R -- audio (presigned) --> R2
-    GH -. schedule .-> N
+    R -- "/api/* (same-origin)" --> N
+    N -- "SQL (neon-http)" --> DB
+    N -- "presigned PUT/GET" --> R2
+    N -- "model calls" --> O
+    R -- "audio (presigned)" --> R2
+    GH -. "schedule" .-> N
 ```
 
 | Piece | Host | Role |
@@ -59,8 +59,10 @@ browser-rendered SPA + Dexie is the keeper; see `docs/migration-nextjs.md`):
 - **Vite PWA → Next.js + Serwist**: the client-rendered SPA is served via a
   catch-all route; the service worker is built by Serwist (`@serwist/next`).
 - **node-postgres → `drizzle-orm/neon-http` + `@neondatabase/serverless`**:
-  HTTP driver, no TCP pool to warm on Vercel cold starts; transactions +
-  advisory locks still work.
+  HTTP driver, no TCP pool to warm on Vercel cold starts. ⚠️ neon-http has **no
+  interactive transactions** (`db.transaction` throws) — atomic multi-step
+  logic (e.g. the upload-quota gate) must be a single SQL statement or the raw
+  Neon client's non-interactive `transaction([...])`.
 - **Neon Functions → retired**: no separate API host. Neon is now *just* the
   database (migrations applied by the deploy pipeline).
 - **Disk audio → R2 presigned URLs** (unchanged): the browser never sends audio
@@ -90,6 +92,18 @@ migrations in `apps/web/drizzle/` (applied by the deploy pipeline — see
 | `prompts` | Per-user, per-day cached AI prompts | `user_id`, `date` (YYYY-MM-DD), `questions` (jsonb), unique `(user_id, date)` |
 | `push_subscriptions` | Web Push subscriptions | `user_id`, `endpoint` (unique per user), `keys` (jsonb) |
 | `audio_uploads` | Upload-quota audit (free-tier abuse gate) | `user_id`, `created_at` |
+| `user_config` | Per-user settings (JSON) + BYO OpenAI key | `user_id` (PK), `config` (jsonb), `openai_api_key_enc` (AES-256-GCM), `key_updated_at` |
+
+### Per-user config + bring-your-own OpenAI key
+
+Each user has one `user_config` row: a JSON `config` document
+(`reminderTime`, `chimesEnabled`, `appearance`) plus their optional BYO OpenAI
+key. The key is **encrypted at rest** (AES-256-GCM, key derived from
+`USER_CONFIG_SECRET` → `AUTH_SECRET`) — it's never stored or returned in
+plaintext, and the client only sees `openaiKeyConfigured`. When a user sets a
+key, the server resolves it (BYO key > app `OPENAI_API_KEY`) per request for
+transcription, cleanup, prompts, and the weekly digest. See
+`apps/web/src/lib/user-config.ts`.
 
 ### Free-tier guardrails (why some columns exist)
 
@@ -265,11 +279,12 @@ service). The critical ones:
 | Var | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | yes | The Neon pooled connection string; set as a Vercel project env var + GitHub secret |
-| `OPENAI_API_KEY` | yes | Transcription + cleanup + prompts + digest |
+| `OPENAI_API_KEY` | app-level | Default OpenAI key; optional once users bring their own (see `user_config`) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 S3 creds for presigned URLs |
 | `R2_API_TOKEN` | yes | Cloudflare API token (R2 read) for the 9.9 GB gate |
 | `CRON_SECRET` | yes | Shared with GitHub Actions |
 | `AUTH_SECRET` | yes | Better Auth session secret |
+| `USER_CONFIG_SECRET` | recommend | Encrypts per-user BYO OpenAI keys (falls back to `AUTH_SECRET`) |
 | `PUBLIC_ORIGIN` | yes in prod | Vercel URL; drives auth + CORS |
 | `VAPID_*` | for push | Web Push keys |
 | `R2_STORAGE_LIMIT_BYTES` | no | Default 9.9 GB |

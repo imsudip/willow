@@ -1,4 +1,9 @@
-import type { ApiEntry, Prompt } from "@willow/shared";
+import type {
+  ApiEntry,
+  Prompt,
+  UserConfig,
+  UserConfigUpdate,
+} from "@willow/shared";
 
 // All API requests are same-origin: Next.js serves the app AND the /api/*
 // Route Handlers, so no proxy, no CORS, no cross-origin cookies. Cookies flow
@@ -112,5 +117,22 @@ export const client = {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ endpoint }),
+    }),
+
+  // ── Per-user config (server-side settings + BYO OpenAI key) ──
+  getUserConfig: () => api<UserConfig>("/api/user/config"),
+
+  updateUserConfig: (patch: UserConfigUpdate) =>
+    api<UserConfig>("/api/user/config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
+
+  setOpenaiKey: (apiKey: string | null) =>
+    api<{ openaiKeyConfigured: boolean }>("/api/user/config/openai-key", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey }),
     }),
 };

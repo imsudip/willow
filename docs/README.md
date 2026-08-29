@@ -32,9 +32,9 @@ values are set as **Vercel project env vars** in production + mirrored to
 
 **In production** — the same values are NOT read from `.env.local`; they come
 from **Vercel project env vars**:
-- Server secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `R2_*`,
-  `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`) are set as **Vercel project env
-  vars**.
+- Server secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`,
+  `USER_CONFIG_SECRET`, `R2_*`, `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`) are
+  set as **Vercel project env vars** for production.
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is the only client-visible var — set in the
   **Vercel project**.
 - `WILLOW_API_URL` / `WILLOW_PRODUCTION_URL` (the Vercel prod URL) are GitHub

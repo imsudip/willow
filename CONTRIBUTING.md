@@ -26,7 +26,8 @@ npm install
 
 # 1. Configure the env — ONE file at the repo root for everything
 cp .env.example .env.local
-#    set OPENAI_API_KEY (required for transcription)
+#    set OPENAI_API_KEY (app default for transcription; optional — users can
+#    also bring their own key from Settings → OpenAI key)
 
 # 2. Point the app at a Postgres database
 #    Option A (Neon):  neon env pull   # writes .env.local DATABASE_URL

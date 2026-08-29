@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth-helpers";
-import { aiAvailable } from "@/lib/services/openai";
+import { openaiClientFor } from "@/lib/services/openai";
 import { cleanupTranscript } from "@/lib/services/cleanup";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ const cleanupBodySchema = z.object({
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!aiAvailable())
+  if (!(await openaiClientFor(user.id)))
     return NextResponse.json(
       { error: "Cleanup is not configured" },
       { status: 503 },
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid transcript" }, { status: 400 });
 
   try {
-    const cleaned = await cleanupTranscript(parsed.data.transcript);
+    const cleaned = await cleanupTranscript(user.id, parsed.data.transcript);
     return NextResponse.json(cleaned);
   } catch (err) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { DIGEST_CONTEXT_ENTRIES, type WeeklyDigest } from "@willow/shared";
 import { env } from "../env";
-import { aiAvailable, openai } from "./openai";
+import { openaiClientFor } from "./openai";
 
 const DIGEST_SYSTEM = `You are a thoughtful journaling companion. Given a week of journal entries (title, mood, tags, excerpt), write a weekly digest.
 
@@ -12,9 +12,11 @@ Return valid JSON only:
 - reflectionPrompt: one gentle question (max 200 chars) for next week, or null.`;
 
 export async function generateWeeklyDigest(
+  userId: string,
   entries: { title: string; mood: string | null; tags: string[]; excerpt: string }[],
 ): Promise<WeeklyDigest> {
-  if (!aiAvailable()) throw new Error("OpenAI is not configured");
+  const client = await openaiClientFor(userId);
+  if (!client) throw new Error("OpenAI is not configured");
 
   const context = entries
     .slice(0, DIGEST_CONTEXT_ENTRIES)
@@ -24,7 +26,7 @@ export async function generateWeeklyDigest(
     )
     .join("\n");
 
-  const completion = await openai.responses.create({
+  const completion = await client.responses.create({
     model: env.CLEANUP_MODEL,
     instructions: DIGEST_SYSTEM,
     input: context,
