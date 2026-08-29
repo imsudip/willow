@@ -13,31 +13,31 @@ const printOnly = process.argv.includes("--print");
 
 const keys = webpush.generateVAPIDKeys();
 const newVars = {
-  VAPID_PUBLIC_KEY: keys.publicKey,
-  VAPID_PRIVATE_KEY: keys.privateKey,
-  VAPID_SUBJECT: "mailto:journal@localhost",
+    VAPID_PUBLIC_KEY: keys.publicKey,
+    VAPID_PRIVATE_KEY: keys.privateKey,
+    VAPID_SUBJECT: "mailto:journal@localhost",
 };
 
 if (printOnly) {
-  console.log(JSON.stringify(newVars, null, 2));
-  process.exit(0);
+    console.log(JSON.stringify(newVars, null, 2));
+    process.exit(0);
 }
 
 let existing = {};
 try {
-  const raw = readFileSync(envPath, "utf8");
-  for (const line of raw.split("\n")) {
-    const m = line.match(/^([A-Z_]+)=(.*)$/);
-    if (m) existing[m[1]] = m[2];
-  }
+    const raw = readFileSync(envPath, "utf8");
+    for (const line of raw.split("\n")) {
+        const m = line.match(/^([A-Z_]+)=(.*)$/);
+        if (m) existing[m[1]] = m[2];
+    }
 } catch {
-  /* .env.local doesn't exist yet */
+    /* .env.local doesn't exist yet */
 }
 
 const merged = { ...existing, ...newVars };
 const out = Object.entries(merged)
-  .map(([k, v]) => `${k}=${v}`)
-  .join("\n");
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
 mkdirSync(dirname(envPath), { recursive: true });
 writeFileSync(envPath, out + "\n");
 

@@ -33,11 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { data, error } = await authClient.signUp.email(
-      { email, password, name },
-      { onSuccess: () => window.location.reload() },
-    );
+    const { data, error } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+    });
     if (error) throw new Error(error.message ?? "Sign up failed");
+    // No window.location.reload() — setUser re-renders the Gate to the app
+    // immediately, avoiding a hard reload (which is slow in dev and makes
+    // the SPA re-mount from scratch).
     setUser(data?.user ?? null);
   };
 

@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate",
     "vapid": "node scripts/generate-vapid.mjs",
@@ -48,6 +49,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.20.1",
     "@types/react": "^19.0.8",

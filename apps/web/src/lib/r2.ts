@@ -1,7 +1,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { db } from "./db/index";
+import { db, neonSql } from "./db/index";
 import { audioUploads } from "./db/schema";
 import { env } from "./env";
 
@@ -122,27 +122,30 @@ export async function getBucketUsageBytes(): Promise<number> {
 }
 
 /**
- * Per-user daily upload quota. Atomically counts today's reservations and
- * inserts a new one in a single transaction so concurrent requests can't
- * bypass MAX_UPLOADS_PER_USER_PER_DAY. A transaction-scoped advisory lock
- * keyed by userId serializes concurrent mints even when the user has no
- * rows yet (FOR UPDATE on an empty set would lock nothing).
+ * Per-user daily upload quota. Atomically reserves a slot only when the user
+ * is under MAX_UPLOADS_PER_USER_PER_DAY for today.
+ *
+ * Uses a single conditional INSERT (CTE) so the count+insert is atomic over
+ * HTTP — drizzle-orm/neon-http doesn't support interactive transactions, and
+ * the old `db.transaction` + advisory-lock pattern threw at runtime. The
+ * statement inserts a row only if today's count is below the cap, and returns
+ * it; if nothing was inserted, the quota is exhausted.
  */
 export async function assertUploadQuota(userId: string): Promise<boolean> {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);
-    const today = await tx
-      .select({ id: audioUploads.id })
-      .from(audioUploads)
-      .where(and(eq(audioUploads.userId, userId), gte(audioUploads.createdAt, startOfDay)));
-    if (today.length >= env.MAX_UPLOADS_PER_USER_PER_DAY) return false;
-
-    await tx.insert(audioUploads).values({ id: crypto.randomUUID(), userId });
-    return true;
-  });
+  const rows = (await neonSql`
+    WITH inserted AS (
+      INSERT INTO audio_uploads (id, user_id, created_at)
+      SELECT ${crypto.randomUUID()}, ${userId}, now()
+      WHERE (
+        SELECT count(*) FROM audio_uploads
+        WHERE user_id = ${userId} AND created_at >= (now() - interval '1 day')
+      ) < ${env.MAX_UPLOADS_PER_USER_PER_DAY}
+      RETURNING id
+    )
+    SELECT count(*)::int AS inserted FROM inserted
+  `) as unknown as { inserted: number }[];
+  const n = Number(rows[0]?.inserted ?? 0);
+  return n > 0;
 }
 
 /**
