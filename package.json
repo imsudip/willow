@@ -33,8 +33,7 @@
     "build": "npm run build -w @willow/shared && npm run build -w @willow/web",
     "typecheck": "npm run build -w @willow/shared && npm run typecheck -w @willow/shared && npm run typecheck -w @willow/web",
     "test": "npm run test -w @willow/shared",
-    "start": "npm run build && npm run start -w @willow/web",
-    "lint": "npm run lint -w @willow/web"
+    "start": "npm run build && npm run start -w @willow/web"
   },
   "engines": {
     "node": ">=22"

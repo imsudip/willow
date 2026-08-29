@@ -69,10 +69,11 @@ browser-rendered SPA + Dexie is the keeper; see `docs/migration-nextjs.md`):
 - **`node-cron` → GitHub Actions** (unchanged): Vercel Cron is capped at 1/day
   on Hobby, so the three jobs stay as authenticated endpoints hit by a
   scheduled workflow.
-- **Same-origin → cross-origin auth**: the frontend and API are different
-  origins now, so Better Auth uses a custom cookie prefix + secure cookies, and
-  the Vercel proxy keeps browser requests same-origin anyway (the proxy forwards
-  `Origin`/cookies untouched, so the auth cookie works as before).
+- **Auth stays same-origin**: the SPA and the `/api/*` Route Handlers share one
+  origin (the single Next.js app), so Better Auth cookies flow normally — no
+  proxy, no CORS. The client uses `createAuthClient()` against the same origin;
+  `PUBLIC_ORIGIN` drives Better Auth's `baseURL` and `trustedOrigins` includes
+  `localhost:3000` (dev) + `PUBLIC_ORIGIN` (prod).
 
 ---
 
@@ -263,7 +264,7 @@ service). The critical ones:
 
 | Var | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | Injected by Neon on Functions; `neon env pull` locally |
+| `DATABASE_URL` | yes | The Neon pooled connection string; set as a Vercel project env var + GitHub secret |
 | `OPENAI_API_KEY` | yes | Transcription + cleanup + prompts + digest |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 S3 creds for presigned URLs |
 | `R2_API_TOKEN` | yes | Cloudflare API token (R2 read) for the 9.9 GB gate |

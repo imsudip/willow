@@ -44,7 +44,7 @@ Open http://localhost:3000.
 > **The single env file**: `.env.local` at the repo root is read by the app
 > (`apps/web/src/lib/env-load.ts`) and drizzle-kit (`drizzle.config.ts`). Copy
 > `.env.example` once and you're set — every variable is annotated there.
-
+>
 > **R2 in local dev**: the app needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 > `R2_SECRET_ACCESS_KEY`, and `R2_API_TOKEN` to mint audio URLs. If you're
 > only working on non-audio features, set dummy values — the endpoints that
@@ -59,8 +59,10 @@ npm run typecheck               # all workspaces
 npm test                        # shared tests
 npm run test -w @willow/web     # web unit tests
 npm run migrate -w @willow/web  # apply Drizzle migrations to Neon
-npm run lint -w @willow/web     # eslint
 ```
+
+> Linting: no ESLint config exists yet, so there's no `npm run lint` command.
+> CI gates are `typecheck` + `test` only.
 
 ## Database changes
 

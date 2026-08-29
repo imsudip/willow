@@ -40,9 +40,10 @@ on:
     paths-ignore: ["docs/**", "**.md", "assets/**"]
   workflow_dispatch: {} # manual redeploy
 
-# Read-only by default; deploy steps explicitly request what they need.
+# Read-only by default; only the finalize job (which tags a release) is
+# granted write access to repository contents.
 permissions:
-  contents: write # for tagging a release
+  contents: read
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -151,6 +152,8 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     if: always() && needs.deploy.result == 'success'
+    permissions:
+      contents: write # for tagging a release
     steps:
       - uses: actions/checkout@v4
         with:

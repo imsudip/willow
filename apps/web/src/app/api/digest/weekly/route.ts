@@ -5,6 +5,7 @@ import { db } from "@/lib/db/index";
 import { entries } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/auth-helpers";
 import { generateWeeklyDigest } from "@/lib/services/digest";
+import { aiAvailable } from "@/lib/services/openai";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,22 @@ export async function GET() {
     excerpt: (r.cleanedBody || r.rawTranscript).slice(0, CONTEXT_BODY_CHARS),
   }));
 
-  const digest = await generateWeeklyDigest(context);
-  return NextResponse.json({ digest, entryCount: rows.length });
+  // Match the transcribe routes' contract: 503 when OpenAI isn't configured,
+  // 502 for any generation/parse failure (not a bare 500).
+  if (!aiAvailable()) {
+    return NextResponse.json(
+      { error: "Digest is not configured" },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const digest = await generateWeeklyDigest(context);
+    return NextResponse.json({ digest, entryCount: rows.length });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Digest failed" },
+      { status: 502 },
+    );
+  }
 }

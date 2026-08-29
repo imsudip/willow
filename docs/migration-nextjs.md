@@ -1,11 +1,12 @@
 # Willow → Next.js Migration Plan
 
-> Status: **Proposed plan** (2026-08-29) · Target: a single Next.js app on
-> **Vercel Hobby**, with **Neon Postgres** and **Cloudflare R2** retained, and
-> **GitHub Actions cron** retained.
+> Status: **Completed** (2026-08-29) · The migration landed as a single Next.js
+> app on **Vercel Hobby**, with **Neon Postgres** and **Cloudflare R2**
+> retained, and **GitHub Actions cron** retained.
 >
-> This is the planning artifact for the migration. It is **not yet applied** —
-> nothing in the repo has changed.
+> This is the planning artifact that guided the migration. It's kept for
+> historical reference — the shipped state may have diverged (see
+> [ARCHITECTURE.md](../ARCHITECTURE.md) and `docs/` for the current design).
 
 ---
 
@@ -262,9 +263,10 @@ account for outbound email. No paid auth tier needed.
 
 - Vercel Hobby env vars are set in the **Vercel project dashboard** (or via
   `vercel env add`). Server-only vars stay server-side; nothing is bundled to
-  the client. Only vars prefixed `NEXT_PUBLIC_` reach the browser — and Willow
-  should need **none** (currently only `VITE_VAPID_PUBLIC_KEY` is client-visible;
-  it becomes a server env var, since push is server-driven now).
+  the client. Only vars prefixed `NEXT_PUBLIC_` reach the browser — the only
+  one today is `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (a copy of the public VAPID key
+  used by the browser to subscribe to push; the server keeps the private key
+  in `VAPID_PRIVATE_KEY`).
 - Keep the single root `.env.local` for local dev; update `.env.example` to
   document the new var usage.
 - `PUBLIC_ORIGIN` → becomes the Vercel prod URL (drives Better Auth `baseURL`).

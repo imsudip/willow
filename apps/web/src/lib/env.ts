@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DEFAULT_CLEANUP_MODEL, DEFAULT_TRANSCRIPTION_MODEL } from "@willow/shared";
+import { DEFAULT_CLEANUP_MODEL, FALLBACK_TRANSCRIPTION_MODEL } from "@willow/shared";
 
 /**
  * Server-side environment schema (Next.js). All values come from Vercel
@@ -9,11 +9,15 @@ import { DEFAULT_CLEANUP_MODEL, DEFAULT_TRANSCRIPTION_MODEL } from "@willow/shar
  */
 const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
-  TRANSCRIPTION_MODEL: z.string().default(DEFAULT_TRANSCRIPTION_MODEL),
+  // Must be a valid batch transcription model (e.g. gpt-4o-mini-transcribe).
+  TRANSCRIPTION_MODEL: z.string().default(FALLBACK_TRANSCRIPTION_MODEL),
   CLEANUP_MODEL: z.string().default(DEFAULT_CLEANUP_MODEL),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
+  // Client-visible VAPID public key (push). Bundled to the browser, so it
+  // must be safe to expose; kept separate from the server-side key pair.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   REMINDER_CRON: z.string().default("30 18 * * *"),
   CRON_TIMEZONE: z.string().default("Asia/Kolkata"),
   CRON_SECRET: z.string().min(16),

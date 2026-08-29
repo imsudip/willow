@@ -130,9 +130,10 @@ Repo docs:
 
 **Cause** — The OpenAI key is missing, or lacks access to `gpt-live-transcribe` / `gpt-4o-mini`.
 
-**How to fix** — Confirm `OPENAI_API_KEY` is set in `.env.local` (and in the
-GitHub `OPENAI_API_KEY` secret for deployed functions), then check the Neon
-function logs for the OpenAI error.
+**How to fix** — Confirm `OPENAI_API_KEY` is set in `.env.local` for local dev,
+and in the **Vercel project env vars** for production (plus the GitHub
+`OPENAI_API_KEY` secret for CI/cron). Then check the **Vercel function logs**
+for the OpenAI error.
 
 ### 2. Auth fails with `INVALID_ORIGIN`
 

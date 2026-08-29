@@ -122,14 +122,20 @@ export async function getBucketUsageBytes(): Promise<number> {
 }
 
 /**
- * Per-user daily upload quota. Atomically reserves a slot only when the user
- * is under MAX_UPLOADS_PER_USER_PER_DAY for today.
+ * Per-user upload quota over a rolling 24-hour window. Reserves a slot only
+ * when the user is under MAX_UPLOADS_PER_USER_PER_DAY.
  *
- * Uses a single conditional INSERT (CTE) so the count+insert is atomic over
- * HTTP — drizzle-orm/neon-http doesn't support interactive transactions, and
- * the old `db.transaction` + advisory-lock pattern threw at runtime. The
- * statement inserts a row only if today's count is below the cap, and returns
- * it; if nothing was inserted, the quota is exhausted.
+ * Uses a single conditional INSERT (CTE) — drizzle-orm/neon-http doesn't
+ * support interactive transactions, so the count+insert can't be wrapped in
+ * one atomic transaction. The statement inserts a row only if the current
+ * count is below the cap and returns it; if nothing was inserted, the quota
+ * is exhausted.
+ *
+ * Note: this is a best-effort guard, not a hard atomic cap. Under Postgres
+ * READ COMMITTED, concurrent requests can read the same count and both
+ * insert, so in-flight bursts may briefly exceed the limit. The window is a
+ * rolling 24 hours (created_at >= now() - interval '1 day'), not a calendar
+ * day.
  */
 export async function assertUploadQuota(userId: string): Promise<boolean> {
   const rows = (await neonSql`

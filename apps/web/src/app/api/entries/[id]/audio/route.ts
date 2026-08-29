@@ -46,9 +46,16 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await deleteAudio(user.id, row[0].id);
+  // Bump updatedAt so GET /api/entries/sync propagates the audio removal.
+  const now = new Date();
   await db
     .update(entries)
-    .set({ audioPath: null, audioPresent: false })
+    .set({
+      audioPath: null,
+      audioPresent: false,
+      updatedAt: now,
+      updatedAtEpochMs: now.getTime(),
+    })
     .where(eq(entries.id, row[0].id));
   return NextResponse.json({ ok: true });
 }

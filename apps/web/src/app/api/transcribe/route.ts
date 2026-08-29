@@ -53,21 +53,31 @@ export async function POST(req: Request) {
   if (row.length === 0)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Pull the audio object back from R2 (server-side subrequest).
-  const get = await r2.send(
-    new GetObjectCommand({
-      Bucket: env.R2_BUCKET,
-      Key: audioKey(user.id, row[0].id),
-    }),
-  );
-  if (!get.Body) {
-    return NextResponse.json(
-      { error: "Audio not found on storage" },
-      { status: 409 },
-    );
-  }
-
   try {
+    // Pull the audio object back from R2 (server-side subrequest).
+    let get;
+    try {
+      get = await r2.send(
+        new GetObjectCommand({
+          Bucket: env.R2_BUCKET,
+          Key: audioKey(user.id, row[0].id),
+        }),
+      );
+    } catch {
+      // The S3 client throws NoSuchKey for a missing object (it doesn't
+      // resolve with an undefined Body), so a missing object surfaces here.
+      return NextResponse.json(
+        { error: "Audio not found on storage" },
+        { status: 409 },
+      );
+    }
+    if (!get.Body) {
+      return NextResponse.json(
+        { error: "Audio not found on storage" },
+        { status: 409 },
+      );
+    }
+
     // transformToByteArray returns Uint8Array<ArrayBufferLike>; copy into a
     // plain ArrayBuffer so it's a valid BlobPart/File source.
     const bytes = await get.Body.transformToByteArray();

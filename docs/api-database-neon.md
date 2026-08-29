@@ -36,8 +36,11 @@ no TCP connection pool to warm on cold starts.
 - DB singleton: `apps/web/src/lib/db/index.ts` (a `globalThis` singleton so
   dev HMR / cold starts don't re-create the client).
 - Driver: `drizzle-orm/neon-http` + `@neondatabase/serverless`.
-- Transactions and advisory locks still work (Neon is real Postgres) — used by
-  the R2 upload-quota gate in `apps/web/src/lib/r2.ts`.
+- ⚠️ neon-http has **no interactive transactions** (`db.transaction` throws at
+  runtime). Atomic multi-step logic — like the R2 upload-quota gate in
+  `apps/web/src/lib/r2.ts` — is written as a single SQL statement (a
+  conditional INSERT CTE via the raw Neon client), not `db.transaction`.
+  Don't reach for `db.transaction` with this driver.
 
 ## Migrations
 
@@ -70,7 +73,7 @@ Key vars used by the API:
 |---|---|---|
 | `DATABASE_URL` | yes | Neon pooled connection string |
 | `OPENAI_API_KEY` | yes | Transcription + cleanup + prompts + digest |
-| `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Defaults `gpt-4o-mini-transcribe` / `gpt-4o-mini` |
+| `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Batch transcription + cleanup models. `TRANSCRIPTION_MODEL` default `gpt-4o-mini-transcribe` (must be a valid batch model); `CLEANUP_MODEL` default `gpt-4o-mini` |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 S3 creds for presigned URLs |
 | `R2_API_TOKEN` | yes | Cloudflare API token (R2 read) for the usage gate |
 | `R2_BUCKET` | no | Default `willow-audio` |

@@ -19,10 +19,14 @@ describe("startOfDayInZone", () => {
   });
 
   it("handles the DST fall-back day (America/New_York)", () => {
-    // 2026-11-01 12:00 EST (UTC-5) == 17:00 UTC.
+    // 2026-11-01 is the DST fall-back day: clocks go back 02:00 EDT → 01:00
+    // EST. `now` is 12:00 EST (UTC-5) == 17:00 UTC, i.e. after the
+    // transition. Local midnight on that date is still 00:00 EDT (UTC-4) —
+    // before the 2am jump — so the correct start of day is 04:00 UTC, NOT
+    // 05:00 UTC (which would wrongly use `now`'s post-transition offset).
     const now = new Date("2026-11-01T17:00:00.000Z");
     const start = startOfDayInZone(now, "America/New_York");
-    expect(start.toISOString()).toBe("2026-11-01T05:00:00.000Z");
+    expect(start.toISOString()).toBe("2026-11-01T04:00:00.000Z");
   });
 });
 

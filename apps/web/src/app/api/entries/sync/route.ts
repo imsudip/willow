@@ -44,10 +44,12 @@ export async function POST(req: Request) {
   const accepted: string[] = [];
 
   for (const e of parsed.data.entries) {
+    // Scope by userId too: an id owned by another user must never be
+    // overwritten or transferred (see the ownership guard below).
     const existing = await db
       .select()
       .from(entries)
-      .where(eq(entries.id, e.id))
+      .where(and(eq(entries.id, e.id), eq(entries.userId, user.id)))
       .limit(1);
 
     // audioPresent on the client means "blob exists locally", not "server has
@@ -75,12 +77,25 @@ export async function POST(req: Request) {
     };
 
     if (existing.length === 0) {
+      // The id may belong to another user (the scoped lookup above returned
+      // nothing). A blind insert would then violate the primary key, so check
+      // for ownership explicitly and reject — never overwrite or duplicate.
+      const taken = await db
+        .select({ id: entries.id })
+        .from(entries)
+        .where(eq(entries.id, e.id))
+        .limit(1);
+      if (taken.length > 0) continue;
+
       await db.insert(entries).values(values);
       accepted.push(e.id);
     } else {
       const incoming = new Date(e.updatedAt).getTime();
       if (incoming >= existing[0].updatedAt.getTime()) {
-        await db.update(entries).set(values).where(eq(entries.id, e.id));
+        await db
+          .update(entries)
+          .set(values)
+          .where(and(eq(entries.id, e.id), eq(entries.userId, user.id)));
         accepted.push(e.id);
       }
     }

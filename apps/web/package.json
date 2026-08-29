@@ -11,8 +11,7 @@
     "test:e2e": "playwright test",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate",
-    "vapid": "node scripts/generate-vapid.mjs",
-    "lint": "next lint"
+    "vapid": "node scripts/generate-vapid.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",

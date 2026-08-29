@@ -25,6 +25,7 @@ export function SettingsScreen() {
   const [appearance, setAppearance] = useState<Appearance>("light");
   const [pushEnabled, setPushEnabled] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   // Load settings
   useEffect(() => {
@@ -71,12 +72,16 @@ export function SettingsScreen() {
       }
       setPushEnabled(false);
     } else {
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string | undefined;
+      if (!vapidPublicKey) {
+        setPushError("Push notifications aren't configured on this server yet.");
+        return;
+      }
+      setPushError(null);
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string) ?? "",
-        ),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
       await client.subscribePush(sub);
       setPushEnabled(true);
@@ -144,6 +149,11 @@ export function SettingsScreen() {
           </span>
           <Switch checked={pushEnabled} onCheckedChange={() => void togglePush()} aria-label="Push notifications" />
         </label>
+        {pushError && (
+          <p className="text-sm text-danger" role="alert">
+            {pushError}
+          </p>
+        )}
 
         <button
           onClick={save}

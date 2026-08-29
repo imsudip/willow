@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, lt } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { SERVER_AUDIO_RETENTION_DAYS } from "@willow/shared";
 import { db } from "@/lib/db/index";
 import { entries } from "@/lib/db/schema";
@@ -19,20 +19,29 @@ export async function POST(req: Request) {
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - SERVER_AUDIO_RETENTION_DAYS);
-  const old = await db.select().from(entries).where(lt(entries.updatedAt, cutoff));
+  const old = await db
+    .select({ id: entries.id, userId: entries.userId })
+    .from(entries)
+    .where(and(lt(entries.updatedAt, cutoff), eq(entries.audioPresent, true)))
+    .limit(500);
+  const now = new Date();
   let pruned = 0;
   for (const e of old) {
-    if (e.audioPresent) {
-      try {
-        await deleteAudio(e.userId, e.id);
-        await db
-          .update(entries)
-          .set({ audioPath: null, audioPresent: false })
-          .where(eq(entries.id, e.id));
-        pruned++;
-      } catch (err) {
-        console.error("Retention prune failed for entry", e.id, err);
-      }
+    try {
+      await deleteAudio(e.userId, e.id);
+      // Bump updatedAt so GET /api/entries/sync propagates the audio removal.
+      await db
+        .update(entries)
+        .set({
+          audioPath: null,
+          audioPresent: false,
+          updatedAt: now,
+          updatedAtEpochMs: now.getTime(),
+        })
+        .where(eq(entries.id, e.id));
+      pruned++;
+    } catch (err) {
+      console.error("Retention prune failed for entry", e.id, err);
     }
   }
   return NextResponse.json({ ok: true, pruned });

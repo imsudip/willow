@@ -64,10 +64,9 @@ npm run dev                     # Next dev server :3000 (serves SPA + /api)
 npm run test -w @willow/web     # web unit tests (vitest)
 npm run migrate -w @willow/web  # apply Drizzle migrations to Neon
 npm run vapid -w @willow/web    # generate VAPID keys into .env.local
-npm run lint -w @willow/web     # eslint (note: no ESLint config in repo yet)
 ```
 
-> **No ESLint config exists** in the repo, so `npm run lint` currently fails.
+> **No ESLint config exists** in the repo, so there is no `npm run lint` yet.
 > CI gates are `typecheck` + `test` only. If you wire up ESLint, add it back to
 > `.github/workflows/ci.yml` and `deploy.yml`.
 >
@@ -169,7 +168,7 @@ yourself, for each file below, "does this change?":
 | Workflow | When | Purpose |
 |---|---|---|
 | `ci.yml` | PR + push to main | `npm ci` → typecheck → test (cheap gate) |
-| `deploy.yml` | push to main | test → deploy API (Neon) → deploy web (Vercel) → sync cron var → smoke → tag |
+| `deploy.yml` | push to main | test → migrate Neon (via `DATABASE_URL`) → deploy the single Next.js app to Vercel → smoke → tag |
 | `cron.yml` | schedule | evening reminder / weekly digest / audio retention |
 
 Deploy secrets/vars: see `docs/ci-cd-github-actions.md`. One-time local setup:

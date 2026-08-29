@@ -31,14 +31,18 @@ values are set as **Vercel project env vars** in production + mirrored to
 **GitHub Actions** (via `scripts/push-secrets-to-github.sh`). See
 [`.env.example`](../.env.example) for the annotated list.
 
-**Exceptions — values NOT read from `.env.local`:**
+**In production** — the same values are NOT read from `.env.local`; they come
+from **Vercel project env vars**:
 - Server secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `R2_*`,
   `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`) are set as **Vercel project env
-  vars** for production.
+  vars**.
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is the only client-visible var — set in the
   **Vercel project**.
 - `WILLOW_API_URL` / `WILLOW_PRODUCTION_URL` (the Vercel prod URL) are GitHub
   **vars** for cron + smoke test.
+
+In **local development**, all of the above (including server secrets) ARE read
+from the root `.env.local`.
 
 ## Deploying
 

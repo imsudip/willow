@@ -59,6 +59,7 @@ runs migrations → `vercel pull` → `vercel build --prod` →
 ```bash
 cd apps/web
 vercel link --yes --project willow
+npm run migrate          # apply Drizzle migrations to Neon (needs DATABASE_URL)
 vercel build --prod --yes   # workspace-aware
 vercel deploy --prebuilt --prod --yes
 ```

@@ -23,7 +23,7 @@ export function dateKeyInZone(d: Date, timeZone: string): string {
  * then subtracts the offset to land on that zone's calendar midnight.
  */
 export function startOfDayInZone(now: Date, timeZone: string): Date {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -32,23 +32,43 @@ export function startOfDayInZone(now: Date, timeZone: string): Date {
     minute: "2-digit",
     second: "2-digit",
     hourCycle: "h23",
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const y = get("year");
-  const mo = get("month");
-  const da = get("day");
-  const h = get("hour");
-  const mi = get("minute");
-  const s = get("second");
+  });
+  const partsOf = (d: Date) => {
+    const parts = fmt.formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+    return {
+      y: get("year"),
+      mo: get("month"),
+      da: get("day"),
+      h: get("hour"),
+      mi: get("minute"),
+      s: get("second"),
+    };
+  };
+  // The zone's wall clock interpreted as if it were UTC. The zone's UTC
+  // offset is (local wall clock) - (real UTC instant): positive east of UTC
+  // (IST = +5.5h), negative west (NY = -4h in EDT).
+  const wallClockAsUtc = (d: Date) => {
+    const p = partsOf(d);
+    return Date.parse(`${p.y}-${p.mo}-${p.da}T${p.h}:${p.mi}:${p.s}.000Z`);
+  };
 
-  // Wall-clock time of `now` in the zone, interpreted as if it were UTC.
-  // The zone's UTC offset is (local wall clock) - (real UTC instant):
-  // positive east of UTC (IST = +5.5h), negative west (NY = -4h in EDT).
-  const wallClockAsUtc = Date.parse(`${y}-${mo}-${da}T${h}:${mi}:${s}.000Z`);
-  const offsetMs = wallClockAsUtc - now.getTime();
+  const target = partsOf(now);
+  const midnightAsUtc = Date.parse(
+    `${target.y}-${target.mo}-${target.da}T00:00:00.000Z`,
+  );
 
-  // Local calendar midnight converted to UTC: UTC = local - offset
-  // (IST 00:00 on the 28th == 2026-08-27T18:30Z).
-  const midnight = Date.parse(`${y}-${mo}-${da}T00:00:00.000Z`);
-  return new Date(midnight - offsetMs);
+  // First estimate of local midnight using `now`'s offset.
+  let instant = new Date(midnightAsUtc - (wallClockAsUtc(now) - now.getTime()));
+
+  // The offset at local midnight can differ from the offset at `now` on a DST
+  // transition day. Converge: correct `instant` by the delta between the
+  // desired and observed wall clock until it reads 00:00 on the target date.
+  for (let i = 0; i < 3; i++) {
+    const observedAsUtc = wallClockAsUtc(instant);
+    if (observedAsUtc === midnightAsUtc) break;
+    instant = new Date(instant.getTime() + (midnightAsUtc - observedAsUtc));
+  }
+
+  return instant;
 }
