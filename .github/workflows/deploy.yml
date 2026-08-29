@@ -246,13 +246,20 @@ jobs:
           fi
 
       # Tag a release (skipped if the commit already has a tag).
+      # `gh auth setup-git` re-wires git's HTTPS credential helper to the
+      # built-in GITHUB_TOKEN (granted `contents: write` above), so the tag
+      # push works even though checkout runs with persist-credentials: false
+      # (without it, `git push` fails with "could not read Username" / exit 128).
       - name: Tag release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
             echo "Commit already tagged; skipping."
           else
             TAG="release-$(date -u +%Y.%m.%d-%H%M%S)"
             git tag "$TAG"
+            gh auth setup-git
             git push origin "$TAG"
             echo "Tagged $TAG"
           fi
