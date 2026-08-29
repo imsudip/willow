@@ -11,8 +11,8 @@ it is, how it's hosted, how it's configured, and how to deploy/manage it.
 
 | Service | Wiki | Host |
 |---|---|---|
-| API + Database | [api-database-neon.md](./api-database-neon.md) | Neon Functions + Neon Postgres |
-| Frontend (PWA) | [frontend-vercel.md](./frontend-vercel.md) | Vercel (static) |
+| App (Next.js: UI + API) + Database | [api-database-neon.md](./api-database-neon.md) | Vercel + Neon Postgres |
+| Frontend (PWA) | [frontend-vercel.md](./frontend-vercel.md) | Vercel |
 | Audio storage | [audio-storage-r2.md](./audio-storage-r2.md) | Cloudflare R2 |
 | CI/CD + scheduled jobs | [ci-cd-github-actions.md](./ci-cd-github-actions.md) | GitHub Actions |
 | AI features | [ai-features-openai.md](./ai-features-openai.md) | OpenAI |
@@ -26,16 +26,19 @@ Willow uses a **single unified environment file** at the repo root:
 cp .env.example .env.local   # then fill in your values
 ```
 
-`.env.local` is gitignored. It serves **most** services — the API runtime, the
-web build (Vite), Neon Functions, and GitHub Actions. See
+`.env.local` is gitignored. It serves the Next.js app in dev, and the same
+values are set as **Vercel project env vars** in production + mirrored to
+**GitHub Actions** (via `scripts/push-secrets-to-github.sh`). See
 [`.env.example`](../.env.example) for the annotated list.
 
 **Exceptions — values NOT read from `.env.local`:**
-- `WILLOW_API_URL` is set in the **Vercel project** (the edge middleware reads
-  it at runtime); the `Deploy` workflow injects it at build time too.
-- `VITE_VAPID_PUBLIC_KEY` is set in the **Vercel project** for production builds.
-- GitHub secrets/vars are mirrored by `scripts/push-secrets-to-github.sh` (the
-  repo's `.env.local` values are copied into GitHub Actions).
+- Server secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `R2_*`,
+  `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`) are set as **Vercel project env
+  vars** for production.
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is the only client-visible var — set in the
+  **Vercel project**.
+- `WILLOW_API_URL` / `WILLOW_PRODUCTION_URL` (the Vercel prod URL) are GitHub
+  **vars** for cron + smoke test.
 
 ## Deploying
 
@@ -45,11 +48,10 @@ One pipeline on push to `main` handles everything
 ```mermaid
 flowchart LR
     A[push to main] --> B[test + typecheck]
-    B --> C[deploy API → Neon Functions]
-    C --> D[deploy web → Vercel]
-    D --> E[set WILLOW_API_URL for cron]
-    E --> F[smoke test live]
-    F --> G[tag release]
+    B --> C[migrate Neon DB]
+    C --> D[deploy Next.js → Vercel]
+    D --> E[smoke test live]
+    E --> F[tag release]
 ```
 
 To point the pipeline at **your own** accounts, run once:

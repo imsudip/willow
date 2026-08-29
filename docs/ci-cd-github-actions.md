@@ -6,18 +6,18 @@
 ## What this is
 
 **GitHub Actions** runs Willow's automation: **CI** (tests/typecheck),
-**CD** (the deploy pipeline), and **scheduled jobs** (the cron that used to run
-in-process). Neon Functions are request-driven, so they can't hold a background
-scheduler — the three jobs became authenticated endpoints triggered by a
-scheduled workflow.
+**CD** (the deploy pipeline), and **scheduled jobs**. Willow is a single Next.js
+app on Vercel — there's no separate API host — but Vercel Cron on the Hobby
+plan is capped at 1 run/day, so the three cron jobs stay as GitHub Actions
+scheduled workflows that hit the app's `/api/cron/*` endpoints.
 
 ## Workflows
 
 | File | When | What it does |
 |---|---|---|
 | `.github/workflows/ci.yml` | every PR + push to `main` | `npm ci` → `npm run typecheck` → `npm test` (cheap gate, no deploy) |
-| `.github/workflows/deploy.yml` | push to `main` / manual dispatch | test → deploy API to Neon → deploy web to Vercel → re-sync `WILLOW_API_URL` for cron → smoke test → tag release |
-| `.github/workflows/cron.yml` | schedule (timezone-aware) | triggers `/api/cron/{reminder,digest,retention}` |
+| `.github/workflows/deploy.yml` | push to `main` / manual dispatch | test → migrate Neon → build & deploy the Next.js app to Vercel → smoke test → tag release |
+| `.github/workflows/cron.yml` | schedule (timezone-aware) | triggers `/api/cron/{reminder,digest,retention}` on the Vercel prod URL |
 
 ### The deploy pipeline (`deploy.yml`)
 
@@ -27,25 +27,22 @@ flowchart LR
         T[test + typecheck]
     end
     subgraph Deploy["deploy.yml"]
-        T --> A[deploy-api<br/>Neon Functions]
-        A -->|api_url| W[deploy-web<br/>Vercel --prebuilt]
-        A --> F[finalize]
-        W --> F
-        F --> V[set WILLOW_API_URL var<br/>for cron]
+        T --> M[migrate Neon DB]
+        M --> W[deploy Next.js<br/>Vercel --prebuilt]
+        W --> F[finalize]
         F --> S[smoke test live]
         F --> R[tag release-&lt;ts&gt;]
     end
     subgraph Cron["cron.yml"]
         C[reminder / digest / retention]
-        C -.->|cron hits API| A
+        C -.->|hits Vercel prod /api/cron/*| W
     end
 ```
 
 - Jobs are serialized with `concurrency` (no overlapping prod deploys).
-- `deploy-api` derives the function URL and passes it to `deploy-web` (for the
-  Vercel middleware) and `finalize` (for the cron var + smoke test).
-- `deploy-web` uses `vercel deploy --prebuilt --prod` so Vercel doesn't
-  rebuild the same artifact twice.
+- `deploy` runs `drizzle-kit migrate` against Neon before building, then uses
+  `vercel deploy --prebuilt --prod` so Vercel doesn't rebuild twice.
+- `finalize` smoke-tests the live production `/api/health` and tags a release.
 
 ### Scheduled jobs (`cron.yml`)
 
@@ -56,6 +53,9 @@ flowchart LR
 | Audio retention | nightly `30 4 * * *` | `POST /api/cron/retention` | Delete R2 audio older than retention window |
 
 Notes:
+- `WILLOW_API_URL` must be the **Vercel production URL** (e.g.
+  `https://willow-alpha-one.vercel.app`) — the Next app serves `/api/cron/*`
+  itself.
 - GitHub Actions fires scheduled jobs within **±~30 min** of the cron time —
   fine for a journaling nudge.
 - `CRON_TIMEZONE` must match the workflow schedules so the reminder's "today"
@@ -69,22 +69,20 @@ Populate everything in one go (reads the single root `.env.local`):
 bash scripts/push-secrets-to-github.sh
 ```
 
-- **Secrets** (masked): `NEON_API_KEY`, `OPENAI_API_KEY`, `AUTH_SECRET`,
+- **Secrets** (masked): `DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`,
   `CRON_SECRET`, `R2_*`, `VAPID_*`, plus `VERCEL_TOKEN` (create via the
   [Vercel Tokens page](https://vercel.com/account/tokens) or
   `vercel tokens add "<name>"`, then `gh secret set VERCEL_TOKEN`).
-- **Variables** (non-secret): `NEON_PROJECT_ID`, `NEON_BRANCH_ID`,
-  `NEON_FUNCTION_SLUG`, `R2_BUCKET`, tuning limits, `PUBLIC_ORIGIN`,
+- **Variables** (non-secret): `R2_BUCKET`, tuning limits, `PUBLIC_ORIGIN`,
   `CRON_TIMEZONE`, `VAPID_SUBJECT`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
-  `WILLOW_API_URL` (re-synced on every deploy).
+  `WILLOW_API_URL` (Vercel prod URL, for cron), `WILLOW_PRODUCTION_URL`.
 
 ## Managing / troubleshooting
 
-- **Deploy failed at `deploy-api`** — check the Neon function deploy API
-  response (logs in the Actions step); confirm `NEON_*` vars are set.
-- **Deploy failed at `deploy-web`** — `VERCEL_TOKEN` is the usual culprit;
+- **Deploy failed at `deploy`** — `VERCEL_TOKEN` is the usual culprit;
   regenerate via the [Vercel Tokens page](https://vercel.com/account/tokens)
-  (or `vercel tokens add "<name>"`) and `gh secret set VERCEL_TOKEN`.
+  (or `vercel tokens add "<name>"`) and `gh secret set VERCEL_TOKEN`. Also
+  confirm `DATABASE_URL` is a secret (the migrate step needs it).
 - **Cron not firing** — GitHub Actions skips scheduled runs on repos with no
   activity for 60 days; push a commit or run `workflow_dispatch`.
 - **Manual runs** — every workflow supports `workflow_dispatch` from the

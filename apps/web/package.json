@@ -10,6 +10,7 @@
     "test": "vitest run",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate",
+    "vapid": "node scripts/generate-vapid.mjs",
     "lint": "next lint"
   },
   "dependencies": {

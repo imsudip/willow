@@ -20,7 +20,7 @@ is sent to the API's `/api/transcribe` endpoint for OpenAI processing.)
 sequenceDiagram
     autonumber
     participant C as Browser (PWA)
-    participant A as API (Neon Function)
+    participant A as API (Next.js Route Handler on Vercel)
     participant R as Cloudflare R2
 
     C->>A: POST /api/entries/:id/audio-url

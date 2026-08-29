@@ -5,59 +5,61 @@
 
 ## What this is
 
-The **web app** (`apps/web`) is a mobile-first **React + Vite PWA** — a warm,
-"golden hour" journaling UI. It's a fully static build served by **Vercel**:
+Willow is a **single Next.js app** (`apps/web`) — a mobile-first, offline-first
+**PWA** with a warm "golden hour" journaling UI. It serves both the UI **and**
+the API:
 
-- Vite + React 19 + Tailwind 4
-- PWA via `vite-plugin-pwa` (injectManifest, `src/sw.ts`) — offline-first
+- Next.js 16 (App Router) + React 19 + Tailwind 4
+- **Client-rendered SPA** served via a catch-all route (offline-first by
+  design; no SSR — the browser renders everything, so it works offline)
+- PWA via **Serwist** (`@serwist/next`; service worker at `src/app/sw.ts`)
 - Offline sync via **IndexedDB (Dexie)** and a background sync engine
   (`apps/web/src/lib/db.ts`, `sync.ts`)
 - Audio recorded in the browser, uploaded straight to R2 via presigned URLs
+- **API** = the app's Route Handlers (`apps/web/src/app/api/*`) — same origin,
+  no proxy, no CORS
 
 ## How it's hosted
 
 | Piece | Host | Why |
 |---|---|---|
-| Frontend (Vite PWA) | **Vercel** (static) | Free, no cold starts, 126 PoPs |
+| App (Next.js: UI + API + auth + cron endpoints) | **Vercel** | Free, edge CDN, one deploy |
 
-Because the frontend is **static**, it has no Vercel serverless functions — so
-there's no usage billing, and deploys are immutable (instant rollback).
+Because the app is a client-rendered SPA, there's no SSR/render cost on
+request; the Route Handlers are the only dynamic functions (serverless).
 
-### SPA fallback + API proxy
+### Same-origin by design
 
-- `apps/web/vercel.json` rewrites all non-API routes to `index.html` (SPA
-  fallback) and disables caching on `sw.js` so PWA updates propagate.
-- `apps/web/middleware.ts` (Vercel Routing Middleware, Edge runtime) proxies
-  `/api/*` to the Neon function URL from the `WILLOW_API_URL` env var — so the
-  function URL stays out of the client bundle and the browser never needs CORS.
-  (vercel.json can't read env vars, which is why the proxy lives in middleware.)
+There is **no `/api` proxy anymore** — the browser calls `/api/*` on the same
+origin, and Next.js serves those Route Handlers. No CORS, no edge middleware,
+no `WILLOW_API_URL` in the client bundle.
 
 ## Configuration
 
 All values live in the **single root `.env.local`** (template:
-[`.env.example`](../.env.example)). Vars relevant to the frontend:
+[`.env.example`](../.env.example)). In production, the same values are set as
+**Vercel project env vars**. Only `NEXT_PUBLIC_*` vars reach the client:
 
 | Var | Where | Notes |
 |---|---|---|
-| `VITE_VAPID_PUBLIC_KEY` | Vite build-time (via `envDir` → repo root) | Web-push public key baked into the client |
-| `WILLOW_API_URL` | **Vercel project env** (not `.env.local`) | Neon function URL the edge middleware proxies to |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel project env (client-visible) | Web-push public key baked into the client |
+| `DATABASE_URL`, `OPENAI_API_KEY`, `AUTH_SECRET`, `R2_*`, `CRON_SECRET`, `VAPID_*`, `PUBLIC_ORIGIN`, etc. | Vercel project env (server-only) | Server-side secrets; never shipped to the client |
 
-> `VITE_*` vars are exposed to the client — **never** put secrets in them.
-> `WILLOW_API_URL` is set in the Vercel project dashboard (and injected by the
-> `Deploy` workflow at build time), not in `.env.local`.
+> Only `NEXT_PUBLIC_*` vars are exposed to the browser — **never** put secrets
+> in them. Server-only vars stay on the server.
 
 ## Deploying
 
 **Automated** (recommended): push to `main` → `.github/workflows/deploy.yml`
-runs `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod`
-with `WILLOW_API_URL` injected.
+runs migrations → `vercel pull` → `vercel build --prod` →
+`vercel deploy --prebuilt --prod`.
 
 **Manual**:
 
 ```bash
 cd apps/web
 vercel link --yes --project willow
-vercel build --prod --yes   # builds locally (workspace-aware)
+vercel build --prod --yes   # workspace-aware
 vercel deploy --prebuilt --prod --yes
 ```
 
@@ -65,8 +67,10 @@ vercel deploy --prebuilt --prod --yes
 
 ```bash
 # in the Vercel project: Settings → Environment Variables
-vercel env add WILLOW_API_URL production   # → the Neon function URL
-vercel env add VITE_VAPID_PUBLIC_KEY production
+vercel env add DATABASE_URL production
+vercel env add OPENAI_API_KEY production
+# ...all the server vars from .env.example
+vercel env add NEXT_PUBLIC_VAPID_PUBLIC_KEY production
 ```
 
 ## Managing / troubleshooting
@@ -76,7 +80,8 @@ vercel env add VITE_VAPID_PUBLIC_KEY production
 - **Preview URLs**: every PR gets a preview URL automatically (skip if you're
   deploying through the pipeline instead).
 - **PWA updates**: bump the build (sw.js is served with `no-cache`), and
-  clients update on next launch (autoUpdate).
-- **API proxy not working** — confirm `WILLOW_API_URL` is set in the Vercel
-  project and points at the function's `invocation_url` (get it with
-  `neon functions list`; the live one here is `.compute.c-5.us-east-2.aws.neon.tech`).
+  clients update on next launch.
+- **Deep links / hard refresh on `/entries/...`** — the catch-all
+  `src/app/[[...slug]]/page.tsx` serves the SPA for every non-API path, so
+  client-side routes work on refresh. If a route 404s, make sure it isn't
+  colliding with an `/api/*` path.
