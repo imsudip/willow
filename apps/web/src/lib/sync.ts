@@ -40,6 +40,7 @@ export async function syncNow(): Promise<void> {
     // Upload audio blobs for entries that have local audio but no server copy.
     // (An entry is usually already synced by the time its blob lands, so this
     // is deliberately not gated on `dirty`.)
+    const handled = new Set<string>();
     const audioRows = await db.audio.toArray();
     for (const row of audioRows) {
       const e = await db.entries.get(row.entryId);
@@ -57,6 +58,7 @@ export async function syncNow(): Promise<void> {
         // (left in "error"/"transcribing" by a failed upload earlier), finish
         // the job — transcribe, then clean up — so it doesn't stay stuck in
         // "error" without a transcript.
+        handled.add(e.id);
         if (e.status === "error" || e.status === "transcribing") {
           await transcribeAndClean(e.id);
         }
@@ -66,13 +68,16 @@ export async function syncNow(): Promise<void> {
     // Entries whose audio already reached the server but whose transcription
     // never completed (e.g. the RecordOverlay's transcribe step failed, or the
     // app closed mid-transcribe) are left in "error"/"transcribing". Resume
-    // them here so they don't stay stuck without a transcript. (`serverAudioUrl`
-    // isn't an indexed Dexie column, so this is a filter scan — fine for the
-    // small local store.)
+    // them here so they don't stay stuck without a transcript. Entries handled
+    // by the audio loop above are excluded — including any it just marked
+    // "error" — so a failed attempt retries on a later sync, not immediately.
+    // (`serverAudioUrl` isn't an indexed Dexie column, so this is a filter scan
+    // — fine for the small local store.)
     const stalled = await db.entries
       .filter(
         (e) =>
           e.serverAudioUrl !== null &&
+          !handled.has(e.id) &&
           (e.status === "error" || e.status === "transcribing"),
       )
       .toArray();

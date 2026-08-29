@@ -2,11 +2,12 @@ import { FALLBACK_TRANSCRIPTION_MODEL } from "@willow/shared";
 import { env } from "../env";
 
 /**
- * Transcribes an uploaded audio file using the OpenAI batch (file) API.
- * The audio blob comes from the client; the OpenAI key stays server-side.
+ * Transcribes an uploaded audio file via the OpenAI audio transcriptions
+ * endpoint (`POST /v1/audio/transcriptions`). The audio blob comes from the
+ * client; the OpenAI key stays server-side.
  *
- * Uses the configured TRANSCRIPTION_MODEL when set (must be a valid batch
- * transcription model such as gpt-4o-mini-transcribe), falling back to
+ * Uses the configured TRANSCRIPTION_MODEL when set (any model supported by
+ * that endpoint, e.g. gpt-4o-mini-transcribe), falling back to
  * gpt-4o-mini-transcribe otherwise.
  */
 export async function transcribeAudioFile(blob: File): Promise<string> {

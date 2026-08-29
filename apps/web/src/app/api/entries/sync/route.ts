@@ -78,17 +78,16 @@ export async function POST(req: Request) {
 
     if (existing.length === 0) {
       // The id may belong to another user (the scoped lookup above returned
-      // nothing). A blind insert would then violate the primary key, so check
-      // for ownership explicitly and reject — never overwrite or duplicate.
-      const taken = await db
-        .select({ id: entries.id })
-        .from(entries)
-        .where(eq(entries.id, e.id))
-        .limit(1);
-      if (taken.length > 0) continue;
-
-      await db.insert(entries).values(values);
-      accepted.push(e.id);
+      // nothing) — or a concurrent request may have just inserted it. Use an
+      // atomic INSERT ... ON CONFLICT DO NOTHING so a primary-key collision
+      // is a no-op, never an overwrite or a 500. The ownership merge path for
+      // same-user conflicts is handled by the update branch below.
+      const inserted = await db
+        .insert(entries)
+        .values(values)
+        .onConflictDoNothing({ target: entries.id })
+        .returning({ id: entries.id });
+      if (inserted.length > 0) accepted.push(e.id);
     } else {
       const incoming = new Date(e.updatedAt).getTime();
       if (incoming >= existing[0].updatedAt.getTime()) {

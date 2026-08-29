@@ -9,6 +9,12 @@ export const dynamic = "force-dynamic";
 // One grouped query + per-active-user push; keep the Hobby 300s ceiling.
 export const maxDuration = 300;
 
+// Bounded batch: each invocation processes at most this many users so the
+// route stays within the platform duration limit even as the user base grows.
+// Users beyond the batch are served on the next cron run (the digest is
+// weekly, so catch-up is acceptable).
+const MAX_DIGEST_BATCH = 200;
+
 function authorized(req: Request) {
   return req.headers.get("authorization") === `Bearer ${env.CRON_SECRET}`;
 }
@@ -29,7 +35,8 @@ export async function POST(req: Request) {
     .where(
       and(gte(entries.recordedAt, weekAgo), isNull(entries.deletedAt)),
     )
-    .groupBy(entries.userId);
+    .groupBy(entries.userId)
+    .limit(MAX_DIGEST_BATCH);
 
   let sent = 0;
   for (const a of active) {
@@ -39,5 +46,5 @@ export async function POST(req: Request) {
       url: "/stats",
     });
   }
-  return NextResponse.json({ ok: true, sent });
+  return NextResponse.json({ ok: true, sent, batch: active.length });
 }

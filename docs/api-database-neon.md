@@ -73,7 +73,7 @@ Key vars used by the API:
 |---|---|---|
 | `DATABASE_URL` | yes | Neon pooled connection string |
 | `OPENAI_API_KEY` | yes | Transcription + cleanup + prompts + digest |
-| `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Batch transcription + cleanup models. `TRANSCRIPTION_MODEL` default `gpt-4o-mini-transcribe` (must be a valid batch model); `CLEANUP_MODEL` default `gpt-4o-mini` |
+| `TRANSCRIPTION_MODEL` / `CLEANUP_MODEL` | no | Audio transcription (`POST /v1/audio/transcriptions`) + cleanup models. `TRANSCRIPTION_MODEL` default `gpt-4o-mini-transcribe` (any model supported by that endpoint); `CLEANUP_MODEL` default `gpt-4o-mini` |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | yes | R2 S3 creds for presigned URLs |
 | `R2_API_TOKEN` | yes | Cloudflare API token (R2 read) for the usage gate |
 | `R2_BUCKET` | no | Default `willow-audio` |

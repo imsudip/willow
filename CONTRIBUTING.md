@@ -62,7 +62,8 @@ npm run migrate -w @willow/web  # apply Drizzle migrations to Neon
 ```
 
 > Linting: no ESLint config exists yet, so there's no `npm run lint` command.
-> CI gates are `typecheck` + `test` only.
+> Pre-deployment CI gates (on PRs) are `typecheck` + `test`; the deploy
+> pipeline additionally runs migrations and `vercel build --prod`.
 
 ## Database changes
 

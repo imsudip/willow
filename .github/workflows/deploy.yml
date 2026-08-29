@@ -175,7 +175,10 @@ jobs:
         run: |
           set -euo pipefail
           PROD="${WILLOW_PRODUCTION_URL:-https://willow-alpha-one.vercel.app}"
-          code=$(curl -sS -o /dev/null -w '%{http_code}' "$PROD/api/health" || true)
+          # Bounded timeouts so an unresponsive endpoint fails the probe
+          # promptly instead of waiting out the runner job timeout.
+          code=$(curl -sS --connect-timeout 10 --max-time 60 \
+            -o /dev/null -w '%{http_code}' "$PROD/api/health" || true)
           echo "health on $PROD: HTTP $code"
           test "$code" = "200"
 

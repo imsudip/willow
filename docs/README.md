@@ -11,8 +11,7 @@ it is, how it's hosted, how it's configured, and how to deploy/manage it.
 
 | Service | Wiki | Host |
 |---|---|---|
-| App (Next.js: UI + API) + Database | [api-database-neon.md](./api-database-neon.md) | Vercel + Neon Postgres |
-| Frontend (PWA) | [frontend-vercel.md](./frontend-vercel.md) | Vercel |
+| App (Next.js: UI + API incl. PWA) + Database | [api-database-neon.md](./api-database-neon.md) · [frontend-vercel.md](./frontend-vercel.md) | Vercel + Neon Postgres |
 | Audio storage | [audio-storage-r2.md](./audio-storage-r2.md) | Cloudflare R2 |
 | CI/CD + scheduled jobs | [ci-cd-github-actions.md](./ci-cd-github-actions.md) | GitHub Actions |
 | AI features | [ai-features-openai.md](./ai-features-openai.md) | OpenAI |

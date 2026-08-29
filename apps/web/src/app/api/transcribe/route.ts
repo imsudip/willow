@@ -63,13 +63,18 @@ export async function POST(req: Request) {
           Key: audioKey(user.id, row[0].id),
         }),
       );
-    } catch {
+    } catch (err) {
       // The S3 client throws NoSuchKey for a missing object (it doesn't
-      // resolve with an undefined Body), so a missing object surfaces here.
-      return NextResponse.json(
-        { error: "Audio not found on storage" },
-        { status: 409 },
-      );
+      // resolve with an undefined Body). Only a missing object is a 409 —
+      // rethrow access/credential/network failures so they reach the outer
+      // 502 handler.
+      if (err instanceof Error && err.name === "NoSuchKey") {
+        return NextResponse.json(
+          { error: "Audio not found on storage" },
+          { status: 409 },
+        );
+      }
+      throw err;
     }
     if (!get.Body) {
       return NextResponse.json(

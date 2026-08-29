@@ -43,6 +43,9 @@ export function startOfDayInZone(now: Date, timeZone: string): Date {
       h: get("hour"),
       mi: get("minute"),
       s: get("second"),
+      // Preserve the sub-second part so the offset math below stays exact
+      // when `now` has nonzero milliseconds.
+      ms: d.getUTCMilliseconds(),
     };
   };
   // The zone's wall clock interpreted as if it were UTC. The zone's UTC
@@ -50,7 +53,8 @@ export function startOfDayInZone(now: Date, timeZone: string): Date {
   // (IST = +5.5h), negative west (NY = -4h in EDT).
   const wallClockAsUtc = (d: Date) => {
     const p = partsOf(d);
-    return Date.parse(`${p.y}-${p.mo}-${p.da}T${p.h}:${p.mi}:${p.s}.000Z`);
+    const ms = String(p.ms).padStart(3, "0");
+    return Date.parse(`${p.y}-${p.mo}-${p.da}T${p.h}:${p.mi}:${p.s}.${ms}Z`);
   };
 
   const target = partsOf(now);
