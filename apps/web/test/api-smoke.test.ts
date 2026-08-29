@@ -36,23 +36,21 @@ describe("API smoke (Next.js Route Handlers)", () => {
   });
 
   it("returns fallback prompts with no entries", async () => {
-    const res = await promptsDaily(
-      new Request("http://localhost:3000/api/prompts/daily", {
-        headers: { Cookie: cookies },
-      }),
-    );
-    expect(res.status).toBe(200);
+    // NOTE: the daily/entries GET handlers read the session from
+    // `headers()` (Next request scope), which only works at runtime — this
+    // test is best run as a browser E2E against a live server, where the
+    // cookie is set by the browser. Direct invocation can't inject the cookie
+    // into `headers()`, so this is a scaffold for a future app-router-aware
+    // test (e.g. `next experimental-test`).
+    const res = await promptsDaily();
     const body = (await res.json()) as { questions: { question: string }[] };
+    expect(res.status).toBe(200);
     expect(body.questions.length).toBeGreaterThan(0);
     expect(body.questions[0].question).toBeTruthy();
   });
 
   it("lists entries (empty for a new user)", async () => {
-    const res = await entriesList(
-      new Request("http://localhost:3000/api/entries", {
-        headers: { Cookie: cookies },
-      }),
-    );
+    const res = await entriesList();
     expect(res.status).toBe(200);
     const body = (await res.json()) as { entries: unknown[] };
     expect(Array.isArray(body.entries)).toBe(true);
